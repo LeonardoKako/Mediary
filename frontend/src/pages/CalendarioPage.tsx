@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSintomasStore } from "../store/useSintomasStore";
-import { useAuthStore } from "../store/useAuthStore";
+// import { useAuthStore } from "../store/useAuthStore";
 import { Calendar as CalendarIcon, User, Plus } from "lucide-react";
 import { Calendar } from "../components/Calendar";
 import { BottomSheetAddSintoma } from "../components/BottomSheetAddSintoma";
@@ -9,7 +9,7 @@ import { ModalViewSintomas } from "../components/ModalViewSintomas";
 
 export const CalendarioPage = () => {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
+  // const user = useAuthStore((state) => state.user);
   const { loadMockSintomas, sintomas, selectedDate, setSelectedDate } =
     useSintomasStore();
 
