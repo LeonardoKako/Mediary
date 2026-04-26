@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %} — Meu Perfil{% endblock %}
+
+{% block body %}
+<div class="screen screen--app">
+
+  <!-- Header -->
+  <header class="app-header">
+    <a href="{{ url_for('calendario') }}" class="header-logo">
+      <svg viewBox="0 0 56 50" fill="none">
+        <rect x="2" y="8" width="52" height="40" rx="6" stroke="#1e6872" stroke-width="3.5"/>
+        <rect x="10" y="2" width="9" height="12" rx="3" fill="#1e6872"/>
+        <rect x="37" y="2" width="9" height="12" rx="3" fill="#1e6872"/>
+        <line x1="2" y1="20" x2="54" y2="20" stroke="#1e6872" stroke-width="2.5"/>
+        <rect x="22" y="28" width="12" height="4" rx="2" fill="#1e6872"/>
+        <rect x="26" y="24" width="4" height="12" rx="2" fill="#1e6872"/>
+      </svg>
+    </a>
+    <span class="cal-nav__title" style="font-size:.95rem;">Meu Perfil</span>
+    <a href="{{ url_for('logout') }}" class="header-user__avatar" title="Sair">
+      <svg viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="19" stroke="#1e6872" stroke-width="2"/>
+        <circle cx="20" cy="16" r="7" fill="#1e6872"/>
+        <path d="M6 36c0-7.732 6.268-14 14-14s14 6.268 14 14" fill="#1e6872"/>
+      </svg>
+    </a>
+  </header>
+
+  <!-- Avatar + nome hero -->
+  <div class="profile-hero">
+    <div class="profile-hero__avatar">
+      <svg viewBox="0 0 80 80" fill="none">
+        <circle cx="40" cy="40" r="40" fill="rgba(255,255,255,0.18)"/>
+        <circle cx="40" cy="32" r="14" fill="white"/>
+        <path d="M12 72c0-15.464 12.536-28 28-28s28 12.536 28 28" fill="white"/>
+      </svg>
+    </div>
+    <h2 class="profile-hero__name">{{ session['usuario_nome'] }}</h2>
+    <p class="profile-hero__email">{{ usuario.email }}</p>
+
+    <!-- Stats -->
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <span class="profile-stat__value">{{ total_sintomas }}</span>
+        <span class="profile-stat__label">Registros</span>
+      </div>
+      <div class="profile-stat__divider"></div>
+      <div class="profile-stat">
+        <span class="profile-stat__value">
+          {% if ultimo_registro %}
+            {{ ultimo_registro.strftime('%d/%m') }}
+          {% else %}—{% endif %}
+        </span>
+        <span class="profile-stat__label">Último registro</span>
+      </div>
+      <div class="profile-stat__divider"></div>
+      <div class="profile-stat">
+        <span class="profile-stat__value">
+          {% if usuario.criado_em %}
+            {{ usuario.criado_em.strftime('%m/%Y') }}
+          {% else %}—{% endif %}
+        </span>
+        <span class="profile-stat__label">Membro desde</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card Panel -->
+  <div class="card-panel card-panel--profile">
+
+    <!-- Seção: Dados pessoais -->
+    <div class="profile-section">
+      <h3 class="profile-section__title">
+        <span class="profile-section__icon">👤</span> Dados pessoais
+      </h3>
+      <form method="POST" action="{{ url_for('perfil') }}" novalidate>
+        <input type="hidden" name="action" value="dados" />
+
+        <div class="form-group">
+          <label class="form-label" for="nome">Nome completo</label>
+          <input
+            class="form-input"
+            type="text"
+            id="nome"
+            name="nome"
+            value="{{ usuario.nome }}"
+            required
+            autocomplete="name"
+          />
+        </div>
+
+        <div class="form-group" style="margin-top:.7rem;">
+          <label class="form-label" for="email">E-mail</label>
+          <input
+            class="form-input"
+            type="email"
+            id="email"
+            name="email"
+            value="{{ usuario.email }}"
+            required
+            autocomplete="email"
+          />
+        </div>
+
+        <button class="btn btn--primary btn--full" type="submit" style="margin-top:1rem;">
+          Salvar dados
+        </button>
+      </form>
+    </div>
+
+    <div class="profile-divider"></div>
+
+    <!-- Seção: Alterar senha -->
+    <div class="profile-section">
+      <h3 class="profile-section__title">
+        <span class="profile-section__icon">🔒</span> Alterar senha
+      </h3>
+      <form method="POST" action="{{ url_for('perfil') }}" novalidate>
+        <input type="hidden" name="action" value="senha" />
+
+        <div class="form-group">
+          <label class="form-label" for="senha_atual">Senha atual</label>
+          <input
+            class="form-input"
+            type="password"
+            id="senha_atual"
+            name="senha_atual"
+            placeholder="••••••••"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="form-group" style="margin-top:.7rem;">
+          <label class="form-label" for="nova_senha">Nova senha</label>
+          <input
+            class="form-input"
+            type="password"
+            id="nova_senha"
+            name="nova_senha"
+            placeholder="Mínimo 6 caracteres"
+            autocomplete="new-password"
+          />
+        </div>
+
+        <div class="form-group" style="margin-top:.7rem;">
+          <label class="form-label" for="confirmar_nova_senha">Confirmar nova senha</label>
+          <input
+            class="form-input"
+            type="password"
+            id="confirmar_nova_senha"
+            name="confirmar_nova_senha"
+            placeholder="Repita a nova senha"
+            autocomplete="new-password"
+          />
+        </div>
+
+        <button class="btn btn--primary btn--full" type="submit" style="margin-top:1rem;">
+          Alterar senha
+        </button>
+      </form>
+    </div>
+
+    <div class="profile-divider"></div>
+
+    <!-- Seção: Ações da conta -->
+    <div class="profile-section">
+      <h3 class="profile-section__title">
+        <span class="profile-section__icon">⚙️</span> Conta
+      </h3>
+
+      <a href="{{ url_for('logout') }}" class="btn-outline-action">
+        <span>🚪</span> Sair da conta
+      </a>
+
+      <!-- Excluir conta (colapsável) -->
+      <details class="danger-zone">
+        <summary class="danger-zone__toggle">🗑 Excluir minha conta</summary>
+        <div class="danger-zone__content">
+          <p class="danger-zone__warning">
+            Atenção: esta ação é irreversível. Todos os seus registros serão excluídos permanentemente.
+          </p>
+          <form method="POST" action="{{ url_for('perfil') }}" novalidate>
+            <input type="hidden" name="action" value="excluir_conta" />
+            <div class="form-group">
+              <label class="form-label" for="senha_exclusao">Confirme com sua senha</label>
+              <input
+                class="form-input"
+                type="password"
+                id="senha_exclusao"
+                name="senha_exclusao"
+                placeholder="••••••••"
+              />
+            </div>
+            <button class="btn btn--danger btn--full" type="submit"
+                    style="margin-top:.8rem;"
+                    onclick="return confirm('Tem certeza? Esta ação não pode ser desfeita.')">
+              Excluir minha conta definitivamente
+            </button>
+          </form>
+        </div>
+      </details>
+    </div>
+
+  </div><!-- /card-panel -->
+</div>
+{% endblock %}

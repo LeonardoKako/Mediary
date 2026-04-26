@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %} — Login{% endblock %}
+
+{% block body %}
+<div class="screen screen--auth">
+  <!-- Topo decorativo -->
+  <div class="auth-top">
+    <div class="auth-top__icons"></div>
+    <div class="auth-logo">
+      <svg viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="12" width="72" height="56" rx="8" stroke="#1e6872" stroke-width="4"/>
+        <rect x="16" y="4" width="12" height="16" rx="4" fill="#1e6872"/>
+        <rect x="52" y="4" width="12" height="16" rx="4" fill="#1e6872"/>
+        <line x1="4" y1="28" x2="76" y2="28" stroke="#1e6872" stroke-width="3"/>
+        <rect x="32" y="38" width="16" height="6" rx="3" fill="#1e6872"/>
+        <rect x="37" y="33" width="6" height="16" rx="3" fill="#1e6872"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Card do formulário -->
+  <div class="auth-card">
+    <h1 class="auth-card__title">LOGIN</h1>
+
+    <form method="POST" action="{{ url_for('login') }}" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="email">E-mail</label>
+        <input
+          class="form-input"
+          type="email"
+          id="email"
+          name="email"
+          placeholder="seu@email.com"
+          required
+          autocomplete="email"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="senha">Senha</label>
+        <input
+          class="form-input"
+          type="password"
+          id="senha"
+          name="senha"
+          placeholder="••••••••"
+          required
+          autocomplete="current-password"
+        />
+      </div>
+
+      <button class="btn btn--primary btn--full" type="submit">Entrar</button>
+    </form>
+
+    <a class="auth-card__link" href="{{ url_for('cadastro') }}">
+      Ainda não tem uma conta? <strong>Cadastre-se</strong>
+    </a>
+  </div>
+</div>
+{% endblock %}

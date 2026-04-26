@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-brand-blue: #21A9BC;
+  --color-brand-blue-dark: #1E6872;
+  --color-brand-navy: #023047;
+  --color-brand-teal: #287985;
+  --color-brand-teal-light: #57959E;
+  --color-brand-active: #284CF1;
+  --color-brand-danger: #FF4A4A;
+  --font-sans: "Nunito", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-blue text-brand-navy antialiased;
+  }
+}
+
+@layer utilities {
+  .animate-slide-up {
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out forwards;
+  }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

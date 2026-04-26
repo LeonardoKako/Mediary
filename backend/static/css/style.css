@@ -1,0 +1,644 @@
+/* ============================================================
+   MEDIDIARY — stylesheet
+   Paleta: #21a9bc (teal), #1e6872 (dark teal), #f0f0f0, white
+   ============================================================ */
+
+/* ── Reset & Base ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --teal:       #21a9bc;
+  --teal-dark:  #1e6872;
+  --teal-btn:   #1a98a9;
+  --bg-card:    #f0f0f0;
+  --white:      #ffffff;
+  --text:       #1a1a2e;
+  --text-light: #555;
+  --radius-lg:  18px;
+  --radius-md:  12px;
+  --radius-sm:  8px;
+  --shadow:     0 4px 14px rgba(0,0,0,.12);
+  --font:       'Nunito', sans-serif;
+  --font-brand: 'Nunito', sans-serif;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--teal);
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+
+/* ── Screen wrapper ─────────────────────────────────────────── */
+.screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* ── Auth screens ───────────────────────────────────────────── */
+.screen--auth {
+  background: var(--teal);
+}
+
+.auth-top {
+  flex: 0 0 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-top--sm { flex: 0 0 80px; }
+
+/* Medical icons background pattern */
+.auth-top__icons {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,.08) 40px, transparent 40px),
+    radial-gradient(circle at 80% 20%, rgba(255,255,255,.06) 30px, transparent 30px),
+    radial-gradient(circle at 60% 70%, rgba(255,255,255,.05) 50px, transparent 50px);
+  pointer-events: none;
+}
+
+.auth-logo {
+  z-index: 1;
+  width: 110px;
+  height: 100px;
+  background: rgba(255,255,255,.18);
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+}
+
+.auth-logo svg { width: 100%; height: 100%; }
+
+.auth-card {
+  flex: 1;
+  background: var(--bg-card);
+  border-radius: 30px 30px 0 0;
+  padding: 2.5rem 2rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.auth-card--tall { padding-bottom: 2rem; }
+
+.auth-card__title {
+  font-size: 1.7rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: .4rem;
+}
+
+.auth-card__link {
+  text-align: center;
+  font-size: .9rem;
+  color: var(--text-light);
+  margin-top: auto;
+  padding-top: 1.2rem;
+}
+
+.auth-card__link strong { color: var(--teal-dark); }
+
+/* ── Form elements ──────────────────────────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.form-label {
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text-light);
+  padding-left: 4px;
+}
+
+.form-input {
+  width: 100%;
+  padding: .9rem 1.1rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-family: var(--font);
+  font-size: 1rem;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  outline: none;
+  transition: box-shadow .2s;
+}
+
+.form-input:focus {
+  box-shadow: 0 0 0 3px rgba(33,169,188,.35), var(--shadow);
+}
+
+textarea.form-input { resize: vertical; min-height: 80px; }
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .85rem 1.6rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  transition: filter .2s, transform .1s;
+}
+
+.btn:active { transform: scale(.97); }
+
+.btn--primary {
+  background: var(--teal);
+  color: var(--white);
+}
+
+.btn--primary:hover { filter: brightness(1.08); }
+
+.btn--danger {
+  background: #e55;
+  color: var(--white);
+  padding: .8rem 1.2rem;
+}
+
+.btn--full  { width: 100%; }
+.btn--grow  { flex: 1; }
+
+/* ── App screens ────────────────────────────────────────────── */
+.screen--app {
+  background: var(--teal);
+  position: relative;
+}
+
+/* ── App Header ─────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1rem .6rem;
+  gap: .5rem;
+}
+
+.header-logo svg {
+  width: 52px;
+  height: 46px;
+  background: rgba(255,255,255,.2);
+  border-radius: 10px;
+  padding: 7px;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+
+.header-user__name {
+  font-size: .85rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.9);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-user__avatar svg {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.2);
+  padding: 3px;
+}
+
+/* ── Calendar nav ───────────────────────────────────────────── */
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: .5rem 1rem 1rem;
+}
+
+.cal-nav__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--white);
+  min-width: 160px;
+  text-align: center;
+}
+
+.cal-nav__btn {
+  width: 42px;
+  height: 42px;
+  background: rgba(255,255,255,.25);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: var(--white);
+  font-weight: 700;
+  line-height: 1;
+  transition: background .15s;
+}
+
+.cal-nav__btn:hover { background: rgba(255,255,255,.38); }
+
+/* ── Calendar grid ──────────────────────────────────────────── */
+.calendar {
+  flex: 1;
+  padding: 0 .6rem;
+}
+
+.calendar__head,
+.calendar__body {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar__weekday {
+  text-align: center;
+  font-size: .7rem;
+  font-weight: 700;
+  color: rgba(255,255,255,.7);
+  padding: .3rem 0;
+  letter-spacing: .04em;
+}
+
+.calendar__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--white);
+  transition: background .15s;
+  position: relative;
+  text-decoration: none;
+  gap: 2px;
+}
+
+.calendar__cell:hover {
+  background: rgba(255,255,255,.18);
+}
+
+.calendar__cell--empty { pointer-events: none; }
+
+.calendar__cell--today {
+  border: 2.5px solid #6ec6f5;
+  color: #d4f7ff;
+}
+
+.calendar__cell--has-symptom {
+  background: rgba(255,255,255,.15);
+}
+
+.calendar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffe066;
+}
+
+.calendar__day { line-height: 1; }
+
+/* ── App Footer / FAB ───────────────────────────────────────── */
+.app-footer {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 1.2rem 0 2rem;
+  margin-top: auto;
+}
+
+.fab {
+  width: 64px;
+  height: 64px;
+  background: var(--white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 24px rgba(0,0,0,.2);
+  transition: transform .2s;
+}
+
+.fab span {
+  font-size: 2.4rem;
+  font-weight: 300;
+  color: var(--teal);
+  line-height: 1;
+  margin-top: -3px;
+}
+
+.fab:hover { transform: scale(1.08); }
+
+/* ── Card Panel ─────────────────────────────────────────────── */
+.card-panel {
+  background: var(--bg-card);
+  border-radius: 28px 28px 0 0;
+  flex: 1;
+  padding: 1.2rem 1rem 2rem;
+  margin-top: .5rem;
+  overflow-y: auto;
+}
+
+.card-panel--form {
+  padding: 1rem 1.2rem 2rem;
+}
+
+.card-panel--edit {
+  position: relative;
+}
+
+.panel-handle {
+  text-align: center;
+  font-size: 1.8rem;
+  color: rgba(255,255,255,.6);
+  padding: .2rem 0 .4rem;
+}
+
+/* ── Symptom Cards (visualizar) ─────────────────────────────── */
+.symptom-card {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: .8rem 1rem;
+  margin-bottom: .8rem;
+  box-shadow: var(--shadow);
+}
+
+.symptom-card__icon-wrap {
+  flex-shrink: 0;
+  width: 58px;
+  height: 58px;
+  background: var(--teal);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+
+.symptom-card__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.symptom-card__type {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--teal-dark);
+  letter-spacing: .03em;
+}
+
+.symptom-card__time {
+  font-size: .85rem;
+  color: var(--text-light);
+}
+
+.symptom-card__desc {
+  font-size: .8rem;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+.symptom-card__edit {
+  flex-shrink: 0;
+  font-size: 1.2rem;
+  color: var(--teal-dark);
+  padding: .3rem .5rem;
+  border-radius: 6px;
+  transition: background .15s;
+}
+
+.symptom-card__edit:hover { background: var(--bg-card); }
+
+.empty-msg {
+  text-align: center;
+  color: var(--text-light);
+  padding: 2rem 0;
+  font-size: .95rem;
+}
+
+/* ── Date row (form) ────────────────────────────────────────── */
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  padding: .55rem .8rem;
+  margin-bottom: .6rem;
+  box-shadow: var(--shadow);
+}
+
+.date-row__label {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text-light);
+  min-width: 64px;
+  letter-spacing: .05em;
+}
+
+.date-row__date,
+.date-row__time {
+  flex: 1;
+  border: none;
+  background: var(--bg-card);
+  border-radius: 6px;
+  padding: .3rem .5rem;
+  font-family: var(--font);
+  font-size: .85rem;
+  color: var(--text);
+  outline: none;
+}
+
+.date-row__time { max-width: 90px; flex: 0 0 90px; }
+
+/* ── Symptom Grid (adicionar) ───────────────────────────────── */
+.symptom-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .6rem;
+  margin: .8rem 0;
+}
+
+.symptom-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .3rem;
+  padding: .6rem .3rem .5rem;
+  border-radius: var(--radius-sm);
+  background: var(--teal-dark);
+  color: var(--white);
+  transition: filter .15s, transform .1s;
+  aspect-ratio: 1;
+}
+
+.symptom-tile:hover { filter: brightness(1.1); }
+.symptom-tile:active { transform: scale(.95); }
+
+.symptom-tile--selected {
+  background: var(--teal);
+  box-shadow: 0 0 0 2.5px var(--white), 0 4px 12px rgba(0,0,0,.15);
+}
+
+.symptom-tile--lg {
+  width: 90px;
+  height: 90px;
+  font-size: 1.1rem;
+}
+
+.symptom-tile__icon { font-size: 1.6rem; line-height: 1; }
+.symptom-tile__label { font-size: .6rem; font-weight: 700; letter-spacing: .04em; text-align: center; }
+
+/* ── Subtipo DOR ────────────────────────────────────────────── */
+.subtipo-section { margin: .4rem 0; }
+.subtipo-section__title {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: .4rem;
+}
+
+.subtipo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.subtipo-btn {
+  padding: .35rem .75rem;
+  border-radius: 20px;
+  background: var(--teal-dark);
+  color: var(--white);
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  transition: background .15s;
+}
+
+.subtipo-btn--selected {
+  background: var(--teal);
+  box-shadow: 0 0 0 2px var(--teal-dark);
+}
+
+/* ── Edit actions ───────────────────────────────────────────── */
+.edit-actions {
+  display: flex;
+  gap: .8rem;
+  margin-top: 1.4rem;
+}
+
+.edit-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 30px;
+  height: 30px;
+  background: var(--bg-card);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+  color: var(--text-light);
+  box-shadow: var(--shadow);
+}
+
+.edit-symptom-badge {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* ── Back button ────────────────────────────────────────────── */
+.back-btn {
+  position: absolute;
+  left: 1.2rem;
+  top: 1.5rem;
+  font-size: 2.2rem;
+  color: var(--white);
+  line-height: 1;
+  font-weight: 300;
+  opacity: .85;
+}
+
+/* ── Flash messages ─────────────────────────────────────────── */
+.flash-container {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  max-width: 360px;
+  width: 90%;
+}
+
+.flash {
+  padding: .8rem 1.2rem;
+  border-radius: var(--radius-md);
+  font-size: .9rem;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+  animation: slideIn .25s ease;
+}
+
+.flash--sucesso { background: #d4edda; color: #155724; }
+.flash--erro    { background: #f8d7da; color: #721c24; }
+.flash--info    { background: #d1ecf1; color: #0c5460; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (min-width: 421px) {
+  body { background: #1a7a8a; }
+  .screen {
+    border-radius: 36px;
+    overflow: hidden;
+    margin: 1.5rem auto;
+    min-height: calc(100vh - 3rem);
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+}
+
+@media (max-width: 360px) {
+  .symptom-grid { grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+  .symptom-tile__icon { font-size: 1.3rem; }
+}
