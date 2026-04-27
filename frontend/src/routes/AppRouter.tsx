@@ -4,13 +4,13 @@ import { useAuthStore } from "../store/useAuthStore";
 
 // Pags a serem criadas
 import { LoginPage } from "../pages/LoginPage";
-
+import { EsqueciSenhaPage } from "../pages/EsqueciSenhaPage";
+import { CadastroPage } from "../pages/CadastroPage";
+import { CalendarioPage } from "../pages/CalendarioPage";
 import { ConfiguracoesPage } from "../pages/ConfiguracoesPage";
 import { EditarPerfilPage } from "../pages/EditarPerfilPage";
 import { MudarSenhaPage } from "../pages/MudarSenhaPage";
 import { SegurancaPrivacidadePage } from "../pages/SegurancaPrivacidadePage";
-import { CadastroPage } from "../pages/CadastroPage";
-import { CalendarioPage } from "../pages/CalendarioPage";
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -24,6 +24,7 @@ export const AppRouter = () => {
         {/* Rotas Públicas */}
         <Route path='/login' element={<LoginPage />} />
         <Route path='/cadastro' element={<CadastroPage />} />
+        <Route path='/esqueci-senha' element={<EsqueciSenhaPage />} />
 
         {/* Rotas Privadas */}
         <Route

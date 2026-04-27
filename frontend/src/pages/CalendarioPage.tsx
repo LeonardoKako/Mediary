@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSintomasStore } from "../store/useSintomasStore";
-// import { useAuthStore } from "../store/useAuthStore";
-import { Calendar as CalendarIcon, User, Plus } from "lucide-react";
+import { useAuthStore } from "../store/useAuthStore";
+import { Calendar as CalendarIcon, User, Plus, Bell } from "lucide-react";
 import { Calendar } from "../components/Calendar";
 import { BottomSheetAddSintoma } from "../components/BottomSheetAddSintoma";
 import { ModalViewSintomas } from "../components/ModalViewSintomas";
 
 export const CalendarioPage = () => {
   const navigate = useNavigate();
-  // const user = useAuthStore((state) => state.user);
+  const user = useAuthStore((state) => state.user);
   const { loadMockSintomas, sintomas, selectedDate, setSelectedDate } =
     useSintomasStore();
 
@@ -29,36 +29,63 @@ export const CalendarioPage = () => {
     );
   });
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bom dia";
+    if (hour < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+
   return (
-    <div className='flex flex-col h-full min-h-screen bg-brand-blue relative overflow-hidden'>
+    <div className='flex flex-col h-full bg-brand-blue relative overflow-hidden'>
       {/* Header */}
-      <div className='pt-12 px-6 pb-6 flex justify-between items-center'>
-        <button
-          onClick={() => setSelectedDate(new Date())}
-          className='w-14 h-14 border-[2px] border-brand-navy rounded-xl flex items-center justify-center relative bg-transparent text-brand-navy active:scale-95 transition-transform'
-        >
-          <CalendarIcon size={32} strokeWidth={1.5} />
-          <div className='absolute inset-0 flex items-center justify-center translate-y-1'>
-            <Plus size={16} strokeWidth={4} />
-          </div>
-        </button>
-        <button
-          onClick={() => navigate("/configuracoes")}
-          className='w-14 h-14 bg-brand-navy rounded-full flex items-center justify-center text-brand-blue active:scale-95 transition-transform shadow-md'
-        >
-          <User size={32} strokeWidth={1.5} />
-        </button>
+      <div className='pt-8 px-6 pb-4 flex flex-col gap-4 animate-fade-in'>
+        <div className="flex justify-between items-center">
+            <button
+                onClick={() => setSelectedDate(new Date())}
+                className='w-11 h-11 border-2 border-white/20 rounded-2xl flex items-center justify-center bg-white/10 text-white active:scale-90 transition-all shadow-lg backdrop-blur-sm group'
+                title="Ir para hoje"
+            >
+                <CalendarIcon size={22} strokeWidth={2} className="group-hover:scale-110 transition-transform" />
+            </button>
+
+            <div className="flex items-center gap-2">
+                <button
+                    className='w-11 h-11 border-2 border-white/20 rounded-2xl flex items-center justify-center bg-white/10 text-white active:scale-90 transition-all shadow-lg backdrop-blur-sm'
+                >
+                    <Bell size={22} strokeWidth={2} />
+                </button>
+                <button
+                    onClick={() => navigate("/configuracoes")}
+                    className='w-11 h-11 bg-brand-navy rounded-2xl flex items-center justify-center text-brand-blue active:scale-90 transition-all shadow-xl border-2 border-brand-blue-dark/30'
+                >
+                    <User size={22} strokeWidth={2.5} />
+                </button>
+            </div>
+        </div>
+
+        <div className="flex flex-col gap-0.5">
+            <h1 className="text-white text-xl font-black flex items-center gap-2">
+                {getGreeting()}, <span className="text-brand-navy underline decoration-brand-blue-dark decoration-4 underline-offset-4">{user?.nome?.split(' ')[0] || 'Paciente'}</span>!
+            </h1>
+            <p className="text-white/70 text-xs font-bold flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-brand-navy rounded-full animate-pulse"></span>
+                Como você está se sentindo hoje?
+            </p>
+        </div>
       </div>
 
-      <div className='flex-1 px-6'>
-        <Calendar />
+      <div className='flex-1 px-6 bg-transparent overflow-hidden flex flex-col justify-center'>
+        <div className="scale-[0.95] origin-top">
+            <Calendar />
+        </div>
 
         {/* Botão de Ver Sintomas do Dia */}
-        <div className='mt-2 flex justify-center animate-fade-in min-h-[48px]'>
+        <div className='mt-0 flex justify-center animate-fade-in min-h-[40px]'>
           {sintomasDoDia.length > 0 && (
             <button
               onClick={() => setIsViewOpen(true)}
-              className='bg-brand-navy text-white px-6 py-3 rounded-full font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all text-sm'
+              className='bg-brand-navy text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all text-xs mb-2'
             >
               VER SINTOMAS ({sintomasDoDia.length})
             </button>
@@ -67,12 +94,12 @@ export const CalendarioPage = () => {
       </div>
 
       {/* Bottom Area with + */}
-      <div className='bg-gray-50 rounded-t-[40px] pt-4 pb-8 flex justify-center w-full mt-auto relative z-10 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]'>
+      <div className='bg-gray-50 rounded-t-[40px] pt-2 pb-6 flex justify-center w-full mt-auto relative z-10 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]'>
         <button
           onClick={() => setIsAddOpen(true)}
           className='text-brand-blue flex items-center justify-center w-full active:scale-95 transition-transform'
         >
-          <Plus size={80} strokeWidth={1.5} />
+          <Plus size={64} strokeWidth={1.5} />
         </button>
       </div>
 

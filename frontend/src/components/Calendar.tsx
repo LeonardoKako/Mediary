@@ -8,6 +8,11 @@ export const Calendar: React.FC = () => {
   // Estado para controlar qual mês estamos visualizando
   const [viewDate, setViewDate] = useState(new Date(selectedDate));
 
+  // Sincronizar visualização quando a data selecionada mudar externamente
+  React.useEffect(() => {
+    setViewDate(new Date(selectedDate));
+  }, [selectedDate]);
+
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
