@@ -27,8 +27,6 @@ export const ConfiguracoesPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
 
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [promoEnabled, setPromoEnabled] = useState(false);
   const [updatesEnabled, setUpdatesEnabled] = useState(true);
 
   const handleLogout = () => {
@@ -110,22 +108,6 @@ export const ConfiguracoesPage = () => {
             Configurações de Notificação
           </h3>
           <div className='bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden'>
-            <div className='w-full flex items-center justify-between p-4 border-b border-gray-100'>
-              <span className='font-bold text-brand-navy'>
-                Notificações Push
-              </span>
-              <Toggle
-                enabled={pushEnabled}
-                onChange={() => setPushEnabled(!pushEnabled)}
-              />
-            </div>
-            <div className='w-full flex items-center justify-between p-4 border-b border-gray-100'>
-              <span className='font-bold text-brand-navy'>Promoções</span>
-              <Toggle
-                enabled={promoEnabled}
-                onChange={() => setPromoEnabled(!promoEnabled)}
-              />
-            </div>
             <div className='w-full flex items-center justify-between p-4'>
               <span className='font-bold text-brand-navy'>
                 Atualizações do App

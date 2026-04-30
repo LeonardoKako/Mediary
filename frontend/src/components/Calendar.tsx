@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSintomasStore } from '../store/useSintomasStore';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-export const Calendar: React.FC = () => {
+export const Calendar: React.FC<{ onDayClick?: (day: number) => void }> = ({ onDayClick }) => {
   const { selectedDate, setSelectedDate } = useSintomasStore();
   
   // Estado para controlar qual mês estamos visualizando
@@ -36,6 +36,7 @@ export const Calendar: React.FC = () => {
   const handleDayClick = (day: number) => {
     const newDate = new Date(year, month, day);
     setSelectedDate(newDate);
+    if (onDayClick) onDayClick(day);
   };
 
   return (

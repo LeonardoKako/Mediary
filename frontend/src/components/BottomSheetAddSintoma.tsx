@@ -31,17 +31,50 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
   const [selectedSubtype, setSelectedSubtype] = useState<string | null>(null);
   const [isSubtypeModalOpen, setIsSubtypeModalOpen] = useState(false);
   const [outroText, setOutroText] = useState('');
+  
+  const [addDate, setAddDate] = useState('');
+  const [addTime, setAddTime] = useState('');
+
+  React.useEffect(() => {
+    if (isOpen) {
+      const now = new Date();
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      setAddDate(`${year}-${month}-${day}`);
+      
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      setAddTime(`${hours}:${minutes}`);
+    }
+  }, [isOpen, selectedDate]);
 
   const handleSave = () => {
     if (!selectedType) return;
     
+    const parseFormatted = (dateStr: string, timeStr: string) => {
+      if (!dateStr) return null;
+      const [year, month, day] = dateStr.split("-");
+      const [hour, minute] = (timeStr || "00:00").split(":");
+      const date = new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+      );
+      return date.toISOString();
+    };
+
+    const dataInicio = parseFormatted(addDate, addTime) || new Date().toISOString();
+
     addSintoma({
       id: Date.now(),
       usuario_id: 1, // Mock
       tipo: selectedType,
       subtipo: selectedSubtype || null,
       descricao: outroText || null,
-      inicio: new Date(selectedDate).toISOString(),
+      inicio: dataInicio,
       fim: null,
       criado_em: new Date().toISOString(),
       atualizado_em: new Date().toISOString()
@@ -90,10 +123,24 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
           </button>
         </div>
         
-        <div className="text-center mb-6">
-          <span className="bg-brand-blue/10 text-brand-navy px-4 py-2 rounded-full font-bold text-sm">
-            {selectedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-          </span>
+        <div className="mb-6 px-4">
+          <label className="block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1 text-center">
+            Quando iniciou?
+          </label>
+          <div className="flex gap-2 justify-center">
+            <input
+              type='date'
+              value={addDate}
+              onChange={(e) => setAddDate(e.target.value)}
+              className='flex-1 max-w-[160px] bg-white border-2 border-gray-200 rounded-2xl px-3 py-3 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
+            />
+            <input
+              type='time'
+              value={addTime}
+              onChange={(e) => setAddTime(e.target.value)}
+              className='w-[100px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-3 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">

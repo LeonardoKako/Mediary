@@ -69,38 +69,29 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  // Funções de Máscara
-  const maskDate = (value: string) => {
-    return value
-      .replace(/\D/g, "") // Remove tudo que não é dígito
-      .replace(/(\d{2})(\d)/, "$1/$2") // Coloca a primeira barra
-      .replace(/(\d{2})(\d)/, "$1/$2") // Coloca a segunda barra
-      .replace(/(\d{4})(\d+?$)/, "$1"); // Limita a 8 dígitos
-  };
-
-  const maskTime = (value: string) => {
-    return value
-      .replace(/\D/g, "")
-      .replace(/(\d{2})(\d)/, "$1:$2")
-      .replace(/(\d{2})(\d+?$)/, "$1"); // Limita a 4 dígitos
-  };
-
   const handleEditClick = (sintoma: any) => {
     setEditingSintomaId(sintoma.id);
 
     const d = new Date(sintoma.inicio);
-    // Formatar para DD/MM/AAAA e HH:mm
-    setEditDateInicio(d.toLocaleDateString("pt-BR"));
-    setEditTimeInicio(
-      d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    );
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    setEditDateInicio(`${year}-${month}-${day}`);
+
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    setEditTimeInicio(`${hours}:${minutes}`);
 
     if (sintoma.fim) {
       const df = new Date(sintoma.fim);
-      setEditDateFim(df.toLocaleDateString("pt-BR"));
-      setEditTimeFim(
-        df.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-      );
+      const fYear = df.getFullYear();
+      const fMonth = String(df.getMonth() + 1).padStart(2, "0");
+      const fDay = String(df.getDate()).padStart(2, "0");
+      setEditDateFim(`${fYear}-${fMonth}-${fDay}`);
+
+      const fHours = String(df.getHours()).padStart(2, "0");
+      const fMinutes = String(df.getMinutes()).padStart(2, "0");
+      setEditTimeFim(`${fHours}:${fMinutes}`);
     } else {
       setEditDateFim("");
       setEditTimeFim("");
@@ -111,8 +102,8 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
     if (!editingSintomaId) return;
 
     const parseFormatted = (dateStr: string, timeStr: string) => {
-      if (!dateStr || dateStr.length < 10) return null;
-      const [day, month, year] = dateStr.split("/");
+      if (!dateStr) return null;
+      const [year, month, day] = dateStr.split("-");
       const [hour, minute] = (timeStr || "00:00").split(":");
       // Criar data localmente e converter para ISO
       const date = new Date(
@@ -197,24 +188,16 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
                 </label>
                 <div className='flex gap-2'>
                   <input
-                    type='text'
-                    inputMode='numeric'
-                    placeholder='DD/MM/AAAA'
+                    type='date'
                     value={editDateInicio}
-                    onChange={(e) =>
-                      setEditDateInicio(maskDate(e.target.value))
-                    }
-                    className='flex-1 bg-white border-2 border-gray-200 rounded-2xl px-4 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm'
+                    onChange={(e) => setEditDateInicio(e.target.value)}
+                    className='flex-1 bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm'
                   />
                   <input
-                    type='text'
-                    inputMode='numeric'
-                    placeholder='HH:MM'
+                    type='time'
                     value={editTimeInicio}
-                    onChange={(e) =>
-                      setEditTimeInicio(maskTime(e.target.value))
-                    }
-                    className='w-[100px] bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
+                    onChange={(e) => setEditTimeInicio(e.target.value)}
+                    className='w-[110px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
                   />
                 </div>
               </div>
@@ -225,20 +208,16 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
                 </label>
                 <div className='flex gap-2'>
                   <input
-                    type='text'
-                    inputMode='numeric'
-                    placeholder='DD/MM/AAAA'
+                    type='date'
                     value={editDateFim}
-                    onChange={(e) => setEditDateFim(maskDate(e.target.value))}
-                    className='flex-1 bg-white border-2 border-gray-200 rounded-2xl px-4 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm'
+                    onChange={(e) => setEditDateFim(e.target.value)}
+                    className='flex-1 bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm'
                   />
                   <input
-                    type='text'
-                    inputMode='numeric'
-                    placeholder='HH:MM'
+                    type='time'
                     value={editTimeFim}
-                    onChange={(e) => setEditTimeFim(maskTime(e.target.value))}
-                    className='w-[100px] bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
+                    onChange={(e) => setEditTimeFim(e.target.value)}
+                    className='w-[110px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
                   />
                 </div>
               </div>
@@ -266,7 +245,7 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
           // List View
           <div className='animate-fade-in'>
             <div className='flex justify-between items-center mb-6'>
-              <h2 className='text-xl font-black text-brand-navy'>
+              <h2 className='text-lg font-black text-brand-navy'>
                 Sintomas do dia {selectedDate.toLocaleDateString()}
               </h2>
               <button

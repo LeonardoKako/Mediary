@@ -51,11 +51,6 @@ export const CalendarioPage = () => {
 
             <div className="flex items-center gap-2">
                 <button
-                    className='w-11 h-11 border-2 border-white/20 rounded-2xl flex items-center justify-center bg-white/10 text-white active:scale-90 transition-all shadow-lg backdrop-blur-sm'
-                >
-                    <Bell size={22} strokeWidth={2} />
-                </button>
-                <button
                     onClick={() => navigate("/configuracoes")}
                     className='w-11 h-11 bg-brand-navy rounded-2xl flex items-center justify-center text-brand-blue active:scale-90 transition-all shadow-xl border-2 border-brand-blue-dark/30'
                 >
@@ -77,19 +72,7 @@ export const CalendarioPage = () => {
 
       <div className='flex-1 px-6 bg-transparent overflow-hidden flex flex-col justify-center'>
         <div className="scale-[0.95] origin-top">
-            <Calendar />
-        </div>
-
-        {/* Botão de Ver Sintomas do Dia */}
-        <div className='mt-0 flex justify-center animate-fade-in min-h-[40px]'>
-          {sintomasDoDia.length > 0 && (
-            <button
-              onClick={() => setIsViewOpen(true)}
-              className='bg-brand-navy text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all text-xs mb-2'
-            >
-              VER SINTOMAS ({sintomasDoDia.length})
-            </button>
-          )}
+            <Calendar onDayClick={() => setIsViewOpen(true)} />
         </div>
       </div>
 
