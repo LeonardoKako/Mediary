@@ -7,6 +7,7 @@ export const mockSintomas = [
     descricao: null,
     inicio: "2026-04-26T14:30:00Z",
     fim: null,
+    is_continuo: false,
     criado_em: "2026-04-26T14:30:00Z",
     atualizado_em: "2026-04-26T14:30:00Z"
   },
@@ -18,6 +19,7 @@ export const mockSintomas = [
     descricao: "Tontura leve ao levantar",
     inicio: "2026-04-26T08:00:00Z",
     fim: null,
+    is_continuo: false,
     criado_em: "2026-04-26T08:15:00Z",
     atualizado_em: "2026-04-26T08:15:00Z"
   }

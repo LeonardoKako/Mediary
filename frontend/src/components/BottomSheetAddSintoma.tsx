@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Frown, Flame, BatteryWarning, Dna, Wind, Thermometer, Bug, Activity, CircleDot, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { ChevronDown, Frown, Flame, BatteryWarning, Dna, Wind, Thermometer, Bug, Activity, CircleDot, MoreHorizontal } from 'lucide-react';
 import { useSintomasStore } from '../store/useSintomasStore';
 import { Button } from './Button';
 import { toast } from 'react-toastify';
@@ -19,7 +19,6 @@ const SINTOMAS = [
   { id: 'DIARREIA', label: 'DIARRÉIA', icon: Bug },
   { id: 'CONSTIPACAO', label: 'CONSTIPAÇÃO', icon: Dna },
   { id: 'COCEIRA', label: 'COCEIRA', icon: Flame },
-  { id: 'CONTINUO', label: 'CONTÍNUO', icon: RefreshCw },
   { id: 'OUTRO', label: 'OUTRO', icon: MoreHorizontal }
 ];
 
@@ -35,6 +34,10 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
   const [addDate, setAddDate] = useState('');
   const [addTime, setAddTime] = useState('');
 
+  const [fimDate, setFimDate] = useState('');
+  const [fimTime, setFimTime] = useState('');
+  const [isContinuo, setIsContinuo] = useState(false);
+
   React.useEffect(() => {
     if (isOpen) {
       const now = new Date();
@@ -46,6 +49,10 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       setAddTime(`${hours}:${minutes}`);
+      
+      setFimDate('');
+      setFimTime('');
+      setIsContinuo(false);
     }
   }, [isOpen, selectedDate]);
 
@@ -67,6 +74,7 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
     };
 
     const dataInicio = parseFormatted(addDate, addTime) || new Date().toISOString();
+    const dataFim = isContinuo ? null : parseFormatted(fimDate, fimTime);
 
     addSintoma({
       id: Date.now(),
@@ -75,7 +83,8 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
       subtipo: selectedSubtype || null,
       descricao: outroText || null,
       inicio: dataInicio,
-      fim: null,
+      fim: dataFim,
+      is_continuo: isContinuo,
       criado_em: new Date().toISOString(),
       atualizado_em: new Date().toISOString()
     });
@@ -104,7 +113,7 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const isOutroActive = selectedType === 'OUTRO' || selectedSubtype === 'OUTRO' || selectedType === 'CONTINUO';
+  const isOutroActive = selectedType === 'OUTRO' || selectedSubtype === 'OUTRO';
   const isSaveDisabled = !selectedType || 
                          (selectedType === 'DOR' && !selectedSubtype) || 
                          (isOutroActive && outroText.trim().length === 0);
@@ -123,23 +132,60 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
           </button>
         </div>
         
-        <div className="mb-6 px-4">
-          <label className="block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1 text-center">
-            Quando iniciou?
-          </label>
-          <div className="flex gap-2 justify-center">
-            <input
-              type='date'
-              value={addDate}
-              onChange={(e) => setAddDate(e.target.value)}
-              className='flex-1 max-w-[160px] bg-white border-2 border-gray-200 rounded-2xl px-3 py-3 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
+        <div className="space-y-4 mb-6 px-4">
+          <div>
+            <label className="block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1 text-center">
+              Quando iniciou?
+            </label>
+            <div className="flex gap-2 justify-center">
+              <input
+                type='date'
+                value={addDate}
+                onChange={(e) => setAddDate(e.target.value)}
+                className='flex-1 max-w-[170px] bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-black text-base outline-none focus:border-brand-blue shadow-sm text-center'
+              />
+              <input
+                type='time'
+                value={addTime}
+                onChange={(e) => setAddTime(e.target.value)}
+                className='w-[110px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-4 text-brand-navy font-black text-base outline-none focus:border-brand-blue shadow-sm text-center'
+              />
+            </div>
+          </div>
+
+          {!isContinuo && (
+            <div className="animate-fade-in">
+              <label className="block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1 text-center">
+                Quando terminou? <span className="italic font-bold text-[10px] text-gray-400">(opcional)</span>
+              </label>
+              <div className="flex gap-2 justify-center">
+                <input
+                  type='date'
+                  value={fimDate}
+                  onChange={(e) => setFimDate(e.target.value)}
+                  className='flex-1 max-w-[170px] bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-black text-base outline-none focus:border-brand-blue shadow-sm text-center'
+                />
+                <input
+                  type='time'
+                  value={fimTime}
+                  onChange={(e) => setFimTime(e.target.value)}
+                  className='w-[110px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-4 text-brand-navy font-black text-base outline-none focus:border-brand-blue shadow-sm text-center'
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-center gap-3 bg-brand-teal/5 py-4 rounded-2xl border-2 border-dashed border-brand-teal/20">
+            <input 
+              type="checkbox" 
+              id="isContinuo"
+              checked={isContinuo}
+              onChange={(e) => setIsContinuo(e.target.checked)}
+              className="w-6 h-6 rounded-lg accent-brand-teal cursor-pointer"
             />
-            <input
-              type='time'
-              value={addTime}
-              onChange={(e) => setAddTime(e.target.value)}
-              className='w-[100px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-3 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
-            />
+            <label htmlFor="isContinuo" className="text-brand-navy font-black text-sm cursor-pointer">
+              Este sintoma está sendo contínuo?
+            </label>
           </div>
         </div>
 

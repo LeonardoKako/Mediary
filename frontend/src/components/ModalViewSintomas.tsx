@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   X,
-  Trash2,
   Edit2,
   ArrowLeft,
   Frown,
@@ -54,23 +53,31 @@ const getIconForType = (tipo: string) => {
 export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
   const { sintomas, selectedDate, removeSintoma, updateSintoma } =
     useSintomasStore();
-  const [editingSintomaId, setEditingSintomaId] = useState<number | null>(null);
 
-  // States for the edit form (now as formatted strings)
+  const [editingSintomaId, setEditingSintomaId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
+  // States for the edit form
   const [editDateInicio, setEditDateInicio] = useState("");
   const [editTimeInicio, setEditTimeInicio] = useState("");
   const [editDateFim, setEditDateFim] = useState("");
   const [editTimeFim, setEditTimeFim] = useState("");
+  const [editIsContinuo, setEditIsContinuo] = useState(false);
+  const [editDescricao, setEditDescricao] = useState("");
 
   if (!isOpen) return null;
 
   const handleClose = () => {
     setEditingSintomaId(null);
+    setConfirmDeleteId(null);
     onClose();
   };
 
   const handleEditClick = (sintoma: any) => {
     setEditingSintomaId(sintoma.id);
+    setConfirmDeleteId(null);
+    setEditIsContinuo(sintoma.is_continuo || false);
+    setEditDescricao(sintoma.descricao || "");
 
     const d = new Date(sintoma.inicio);
     const year = d.getFullYear();
@@ -105,7 +112,6 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
       if (!dateStr) return null;
       const [year, month, day] = dateStr.split("-");
       const [hour, minute] = (timeStr || "00:00").split(":");
-      // Criar data localmente e converter para ISO
       const date = new Date(
         Number(year),
         Number(month) - 1,
@@ -120,7 +126,10 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
       inicio:
         parseFormatted(editDateInicio, editTimeInicio) ||
         new Date().toISOString(),
-      fim: parseFormatted(editDateFim, editTimeFim),
+      fim: editIsContinuo ? null : parseFormatted(editDateFim, editTimeFim),
+      is_continuo: editIsContinuo,
+      descricao: editDescricao || null,
+      atualizado_em: new Date().toISOString(),
     });
     setEditingSintomaId(null);
   };
@@ -202,24 +211,58 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              <div>
-                <label className='block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1'>
-                  Terminou em (opcional):
-                </label>
-                <div className='flex gap-2'>
-                  <input
-                    type='date'
-                    value={editDateFim}
-                    onChange={(e) => setEditDateFim(e.target.value)}
-                    className='flex-1 bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm'
-                  />
-                  <input
-                    type='time'
-                    value={editTimeFim}
-                    onChange={(e) => setEditTimeFim(e.target.value)}
-                    className='w-[110px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
-                  />
+              {!editIsContinuo && (
+                <div className='animate-fade-in'>
+                  <label className='block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1'>
+                    Terminou em{" "}
+                    <span className='italic text-[10px] text-gray-400 font-bold'>
+                      (opcional)
+                    </span>
+                    :
+                  </label>
+                  <div className='flex gap-2'>
+                    <input
+                      type='date'
+                      value={editDateFim}
+                      onChange={(e) => setEditDateFim(e.target.value)}
+                      className='flex-1 bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm'
+                    />
+                    <input
+                      type='time'
+                      value={editTimeFim}
+                      onChange={(e) => setEditTimeFim(e.target.value)}
+                      className='w-[110px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
+                    />
+                  </div>
                 </div>
+              )}
+
+              <div className='flex items-center gap-3 bg-brand-teal/5 py-3 px-4 rounded-2xl border-2 border-dashed border-brand-teal/20'>
+                <input
+                  type='checkbox'
+                  id='editIsContinuo'
+                  checked={editIsContinuo}
+                  onChange={(e) => setEditIsContinuo(e.target.checked)}
+                  className='w-5 h-5 rounded accent-brand-teal'
+                />
+                <label
+                  htmlFor='editIsContinuo'
+                  className='text-brand-navy font-black text-xs'
+                >
+                  Sintoma contínuo?
+                </label>
+              </div>
+
+              <div className='animate-fade-in'>
+                <label className='block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1'>
+                  Observações:
+                </label>
+                <textarea
+                  value={editDescricao}
+                  onChange={(e) => setEditDescricao(e.target.value)}
+                  placeholder='Detalhes sobre o sintoma...'
+                  className='w-full bg-white border-2 border-gray-200 rounded-2xl px-4 py-3 text-brand-navy font-medium text-sm outline-none focus:border-brand-blue shadow-sm min-h-[80px] resize-none'
+                />
               </div>
             </div>
 
@@ -232,12 +275,23 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
               </Button>
               <button
                 onClick={() => {
-                  removeSintoma(editingSintoma.id);
-                  setEditingSintomaId(null);
+                  if (confirmDeleteId === editingSintoma.id) {
+                    removeSintoma(editingSintoma.id);
+                    setEditingSintomaId(null);
+                    setConfirmDeleteId(null);
+                  } else {
+                    setConfirmDeleteId(editingSintoma.id);
+                  }
                 }}
-                className='w-full py-4 rounded-3xl font-black text-brand-danger bg-red-50/50 hover:bg-red-50 transition-colors uppercase tracking-widest text-xs'
+                className={`w-full py-4 rounded-3xl font-black uppercase tracking-widest text-xs transition-all duration-200 ${
+                  confirmDeleteId === editingSintoma.id
+                    ? "bg-brand-danger text-white scale-105 shadow-lg"
+                    : "bg-red-50/50 text-brand-danger hover:bg-red-50"
+                }`}
               >
-                EXCLUIR REGISTRO
+                {confirmDeleteId === editingSintoma.id
+                  ? "CONFIRMAR EXCLUSÃO?"
+                  : "EXCLUIR REGISTRO"}
               </button>
             </div>
           </div>
@@ -266,62 +320,64 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
               <div className='space-y-4 max-h-[50vh] overflow-y-auto pr-2 pb-2'>
                 {sintomasDoDia.map((sintoma) => {
                   const Icon = getIconForType(sintoma.tipo);
+                  // const isConfirming = confirmDeleteId === sintoma.id;
+
                   return (
                     <div
                       key={sintoma.id}
-                      className='bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border-l-4 border-brand-blue'
+                      className='bg-white py-6 px-6 rounded-[32px] shadow-sm border-l-[12px] border-brand-blue relative overflow-hidden group hover:bg-gray-50 transition-colors'
                     >
-                      <div className='flex items-center gap-4 flex-1'>
-                        <div className='bg-brand-teal/20 p-3 rounded-full text-brand-teal'>
-                          <Icon size={24} strokeWidth={2} />
-                        </div>
-                        <div>
-                          <p className='font-bold text-brand-navy'>
+                      <div className='flex flex-col gap-3'>
+                        {/* Título Centralizado no Topo */}
+                        <div className='border-b border-gray-100 pb-3 text-center'>
+                          <p className='font-black text-brand-navy text-xl uppercase tracking-tighter'>
                             {sintoma.tipo.replace(/_/g, " ")}
                           </p>
-                          {sintoma.subtipo && (
-                            <p className='text-sm text-gray-500 font-medium'>
-                              {sintoma.subtipo}
-                            </p>
-                          )}
-                          {sintoma.descricao && (
-                            <p className='text-sm text-brand-blue font-medium mt-1'>
-                              "{sintoma.descricao}"
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className='flex items-center gap-2 pl-2'>
-                        <div className='text-[10px] text-brand-blue font-bold px-2 py-1 bg-blue-50 rounded-xl text-center min-w-[50px]'>
-                          <div>
-                            {new Date(sintoma.inicio).toLocaleDateString(
-                              "pt-BR",
-                              { day: "2-digit", month: "2-digit" },
-                            )}
-                          </div>
-                          {sintoma.fim && (
-                            <div className='text-brand-navy mt-1 border-t border-blue-100 pt-1'>
-                              até{" "}
-                              {new Date(sintoma.fim).toLocaleDateString(
-                                "pt-BR",
-                                { day: "2-digit", month: "2-digit" },
-                              )}
-                            </div>
-                          )}
                         </div>
 
-                        <div className='flex flex-col gap-1 ml-1'>
+                        <div className='flex items-center justify-between gap-2 px-2'>
+                          {/* Coluna 1: Ícone */}
+                          <div className='bg-brand-blue/10 p-3 rounded-2xl text-brand-blue shrink-0 shadow-inner'>
+                            <Icon size={24} strokeWidth={2.5} />
+                          </div>
+
+                          {/* Coluna 2: Detalhes Centralizados (Data e Contínuo) */}
+                          <div className='flex flex-col items-center gap-1.5 flex-1 min-w-0'>
+                            <span className='text-sm font-black text-brand-blue bg-brand-blue/5 px-4 py-1 rounded-xl shadow-sm'>
+                              {new Date(sintoma.inicio).toLocaleDateString(
+                                "pt-BR",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                },
+                              )}
+                            </span>
+
+                            {sintoma.is_continuo && (
+                              <span className='text-[9px] font-black text-brand-teal bg-brand-teal/10 px-3 py-1 rounded-full uppercase'>
+                                Contínuo
+                              </span>
+                            )}
+
+                            {sintoma.subtipo && (
+                              <p className='text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate max-w-full'>
+                                {sintoma.subtipo}
+                              </p>
+                            )}
+
+                            {sintoma.descricao && (
+                              <p className='text-[11px] text-brand-navy/70 font-medium italic mt-1 line-clamp-2 max-w-full'>
+                                "{sintoma.descricao}"
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Coluna 3: Ação (Editar) */}
                           <button
                             onClick={() => handleEditClick(sintoma)}
-                            className='text-brand-navy bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors'
+                            className='bg-brand-blue/5 text-brand-blue p-4 rounded-2xl hover:bg-brand-blue hover:text-white transition-all active:scale-90 shadow-sm'
                           >
-                            <Edit2 size={14} strokeWidth={2.5} />
-                          </button>
-                          <button
-                            onClick={() => removeSintoma(sintoma.id)}
-                            className='text-brand-danger bg-red-50 p-2 rounded-full hover:bg-red-100 transition-colors'
-                          >
-                            <Trash2 size={14} strokeWidth={2.5} />
+                            <Edit2 size={24} strokeWidth={3} />
                           </button>
                         </div>
                       </div>
