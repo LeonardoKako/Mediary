@@ -18,32 +18,31 @@ import {
 
 export const CadastroPage = () => {
   const navigate = useNavigate();
-  const setMockUser = useAuthStore((state) => state.setMockUser);
+  const cadastro = useAuthStore((state) => state.cadastro);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       registerSchema.parse({ nome, email, senha });
-
-      setTimeout(() => {
-        setMockUser();
-        toast.success("Conta criada com sucesso! Bem-vindo!");
-        navigate("/");
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
+      await cadastro(nome, email, senha);
+      toast.success("Conta criada com sucesso! Faça login para continuar.");
+      navigate("/login");
+    } catch (error: any) {
       if (error instanceof ZodError) {
         toast.error("Por favor, preencha todos os campos corretamente.");
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
       } else {
         toast.error("Erro ao criar conta");
       }
+    } finally {
       setLoading(false);
     }
   };

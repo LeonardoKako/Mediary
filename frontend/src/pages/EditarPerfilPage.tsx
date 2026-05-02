@@ -9,15 +9,34 @@ import { toast } from "react-toastify";
 export const EditarPerfilPage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const updatePerfil = useAuthStore((state) => state.updatePerfil);
+  const [loading, setLoading] = useState(false);
 
   const [nome, setNome] = useState(user?.nome || "");
   const [email, setEmail] = useState(user?.email || "");
 
-  const handleSave = (e: React.FormEvent) => {
+  // Atualiza os campos quando o usuário carregar (ex: após o checkAuth)
+  React.useEffect(() => {
+    if (user) {
+      setNome(user.nome || "");
+      setEmail(user.email || "");
+    }
+  }, [user]);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Connect with backend later
-    toast.success("Perfil atualizado com sucesso!", { position: "top-center" });
-    navigate(-1);
+    setLoading(true);
+    try {
+      await updatePerfil(nome, email);
+      toast.success("Perfil atualizado com sucesso!", {
+        position: "top-center",
+      });
+      navigate(-1);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Erro ao atualizar perfil");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,7 +45,7 @@ export const EditarPerfilPage = () => {
       <div className='bg-brand-blue pt-12 pb-16 px-6 rounded-b-[40px] shadow-sm'>
         <div className='flex items-center relative w-full h-10'>
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/configuracoes")}
             className='absolute left-0 w-10 h-10 bg-white/20 flex items-center justify-center rounded-full text-brand-navy active:scale-95 transition-transform'
           >
             <ChevronLeft size={24} strokeWidth={2.5} />
@@ -49,7 +68,7 @@ export const EditarPerfilPage = () => {
           {user?.nome || "Usuário"}
         </h2>
         <p className='text-gray-500 font-medium'>
-          {user?.email || "usuario@mediary.com"}
+          {user?.email || ""}
         </p>
       </div>
       {/* Formulário */}
@@ -72,7 +91,7 @@ export const EditarPerfilPage = () => {
           </div>
 
           <div className='mt-auto pt-6 pb-6'>
-            <Button type='submit' className='w-full'>
+            <Button type='submit' className='w-full' isLoading={loading}>
               SALVAR ALTERAÇÕES
             </Button>
           </div>

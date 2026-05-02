@@ -10,32 +10,30 @@ import { Calendar, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const setMockUser = useAuthStore((state) => state.setMockUser);
+  const login = useAuthStore((state) => state.login);
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       loginSchema.parse({ email, senha });
-
-      // Simular delay de API
-      setTimeout(() => {
-        setMockUser();
-        toast.success("Bem-vindo de volta!");
-        navigate("/");
-        setLoading(false);
-      }, 800);
-    } catch (error) {
+      await login(email, senha);
+      toast.success("Bem-vindo de volta!");
+      navigate("/");
+    } catch (error: any) {
       if (error instanceof ZodError) {
         toast.error("Por favor, verifique seus dados.");
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
       } else {
         toast.error("Erro ao fazer login");
       }
+    } finally {
       setLoading(false);
     }
   };

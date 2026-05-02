@@ -3,7 +3,8 @@ MediDiary — Backend Flask
 Banco de dados: SQL Server via pyodbc
 """
 import os
-import pyodbc
+import sqlite3
+from flask_cors import CORS
 from functools import wraps
 from datetime import datetime, date
 import calendar as cal_mod
@@ -14,20 +15,54 @@ from flask import (
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True)
 app.secret_key = os.environ.get("SECRET_KEY", "medidiary-dev-secret-key-change-in-prod")
 
-# ── Conexão SQL Server ─────────────────────────────────────────────────────────
-DB_CONN_STR = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=DESKTOP-LENA;"
-    "DATABASE=MediDiary;"
-    "UID=dev;"
-    "PWD=123456;"
-    "TrustServerCertificate=yes;"
+# Configurações de Cookie para Cross-Origin (necessário para localhost:5173 -> localhost:5000)
+app.config.update(
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=False, # True apenas em produção com HTTPS
 )
 
+# ── Conexão SQLite ─────────────────────────────────────────────────────────────
+DB_PATH = os.path.join(os.path.dirname(__file__), "mediary.db")
+
 def get_db():
-    return pyodbc.connect(DB_CONN_STR)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS Usuarios (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome       TEXT NOT NULL,
+            email      TEXT NOT NULL UNIQUE,
+            senha_hash TEXT NOT NULL,
+            criado_em  DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS Sintomas (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id    INTEGER NOT NULL,
+            tipo          TEXT NOT NULL,
+            subtipo       TEXT,
+            descricao     TEXT,
+            inicio        DATETIME NOT NULL,
+            fim           DATETIME,
+            criado_em     DATETIME DEFAULT CURRENT_TIMESTAMP,
+            atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (usuario_id) REFERENCES Usuarios(id) ON DELETE CASCADE
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
 
 
 # ── Tipos de sintoma disponíveis ───────────────────────────────────────────────
@@ -55,148 +90,190 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if "usuario_id" not in session:
-            return redirect(url_for("login"))
+            return jsonify({"error": "Não autorizado"}), 401
         return f(*args, **kwargs)
     return decorated
 
 
 # ── Rotas de Autenticação ──────────────────────────────────────────────────────
-@app.route("/", methods=["GET"])
-def index():
+@app.route("/api/me", methods=["GET"])
+def me():
     if "usuario_id" in session:
-        return redirect(url_for("calendario"))
-    return redirect(url_for("login"))
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
-        senha = request.form.get("senha", "")
-
         try:
             conn = get_db()
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT id, nome, senha_hash FROM Usuarios WHERE email = ?", email
-            )
+            cursor.execute("SELECT id, nome, email FROM Usuarios WHERE id = ?", (session["usuario_id"],))
             row = cursor.fetchone()
             conn.close()
-
-            if row and check_password_hash(row.senha_hash, senha):
-                session["usuario_id"] = row.id
-                session["usuario_nome"] = row.nome
-                return redirect(url_for("calendario"))
-            else:
-                flash("E-mail ou senha incorretos.", "erro")
+            
+            if row:
+                return jsonify({
+                    "id": row["id"],
+                    "nome": row["nome"],
+                    "email": row["email"]
+                })
         except Exception as e:
-            flash(f"Erro de conexão: {e}", "erro")
-
-    return render_template("login.html")
-
-
-@app.route("/cadastro", methods=["GET", "POST"])
-def cadastro():
-    if request.method == "POST":
-        nome  = request.form.get("nome", "").strip()
-        email = request.form.get("email", "").strip().lower()
-        senha = request.form.get("senha", "")
-        conf  = request.form.get("confirmar_senha", "")
-
-        if not nome or not email or not senha:
-            flash("Preencha todos os campos.", "erro")
-        elif senha != conf:
-            flash("As senhas não coincidem.", "erro")
-        elif len(senha) < 6:
-            flash("A senha deve ter pelo menos 6 caracteres.", "erro")
-        else:
-            try:
-                conn = get_db()
-                cursor = conn.cursor()
-                cursor.execute(
-                    "INSERT INTO Usuarios (nome, email, senha_hash) VALUES (?, ?, ?)",
-                    nome, email, generate_password_hash(senha)
-                )
-                conn.commit()
-                conn.close()
-                flash("Conta criada com sucesso! Faça login.", "sucesso")
-                return redirect(url_for("login"))
-            except pyodbc.IntegrityError:
-                flash("E-mail já cadastrado.", "erro")
-            except Exception as e:
-                flash(f"Erro: {e}", "erro")
-
-    return render_template("cadastro.html")
+            return jsonify({"error": str(e)}), 500
+            
+    return jsonify({"error": "Não logado"}), 401
 
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.json
+    email = data.get("email", "").strip().lower()
+    senha = data.get("senha", "")
 
-
-# ── Calendário ─────────────────────────────────────────────────────────────────
-@app.route("/calendario")
-@login_required
-def calendario():
-    hoje = date.today()
-    ano  = int(request.args.get("ano",  hoje.year))
-    mes  = int(request.args.get("mes",  hoje.month))
-
-    # Clamp
-    if mes < 1:  mes = 12; ano -= 1
-    if mes > 12: mes =  1; ano += 1
-
-    # Dias do mês
-    _, dias_no_mes = cal_mod.monthrange(ano, mes)
-    primeiro_dia   = date(ano, mes, 1)
-    dia_semana_ini = primeiro_dia.weekday()  # 0=seg … 6=dom → vamos usar dom=0
-    offset = (dia_semana_ini + 1) % 7  # offset para domingo como primeiro col
-
-    # Datas com sintomas
     try:
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT CAST(inicio AS DATE) AS dia, COUNT(*) as total
+            "SELECT id, nome, senha_hash FROM Usuarios WHERE email = ?", (email,)
+        )
+        row = cursor.fetchone()
+        conn.close()
+
+        if row and check_password_hash(row["senha_hash"], senha):
+            session["usuario_id"] = row["id"]
+            session["usuario_nome"] = row["nome"]
+            return jsonify({
+                "message": "Login realizado com sucesso",
+                "user": {"id": row["id"], "nome": row["nome"]}
+            })
+        else:
+            return jsonify({"error": "E-mail ou senha incorretos"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/cadastro", methods=["POST"])
+def cadastro():
+    data = request.json
+    nome  = data.get("nome", "").strip()
+    email = data.get("email", "").strip().lower()
+    senha = data.get("senha", "")
+
+    if not nome or not email or not senha:
+        return jsonify({"error": "Preencha todos os campos"}), 400
+    
+    if len(senha) < 6:
+        return jsonify({"error": "A senha deve ter pelo menos 6 caracteres"}), 400
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO Usuarios (nome, email, senha_hash) VALUES (?, ?, ?)",
+            (nome, email, generate_password_hash(senha))
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"message": "Conta criada com sucesso!"}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "E-mail já cadastrado"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/usuario", methods=["PUT"])
+@login_required
+def update_usuario():
+    data = request.json
+    nome = data.get("nome")
+    email = data.get("email")
+    
+    if not nome or not email:
+        return jsonify({"error": "Nome e e-mail são obrigatórios"}), 400
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE Usuarios SET nome=?, email=? WHERE id=?",
+            (nome, email, session["usuario_id"])
+        )
+        conn.commit()
+        conn.close()
+        
+        session["usuario_nome"] = nome
+        return jsonify({"message": "Perfil atualizado com sucesso", "nome": nome, "email": email})
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Este e-mail já está em uso por outro usuário"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/usuario/senha", methods=["PUT"])
+@login_required
+def update_senha():
+    data = request.json
+    senha_atual = data.get("senha_atual")
+    senha_nova = data.get("senha_nova")
+    
+    if not senha_atual or not senha_nova:
+        return jsonify({"error": "Preencha todos os campos"}), 400
+        
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT senha_hash FROM Usuarios WHERE id = ?", (session["usuario_id"],))
+        row = cursor.fetchone()
+        
+        if row and check_password_hash(row["senha_hash"], senha_atual):
+            cursor.execute(
+                "UPDATE Usuarios SET senha_hash=? WHERE id=?",
+                (generate_password_hash(senha_nova), session["usuario_id"])
+            )
+            conn.commit()
+            conn.close()
+            return jsonify({"message": "Senha atualizada com sucesso"})
+        else:
+            conn.close()
+            return jsonify({"error": "Senha atual incorreta"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/logout")
+def logout():
+    session.clear()
+    return jsonify({"message": "Logout realizado com sucesso"})
+
+
+# Rotas do Calendário agora são via API JSON
+@app.route("/api/sintomas/calendario")
+@login_required
+def api_calendario_info():
+    ano = int(request.args.get("ano", date.today().year))
+    mes = int(request.args.get("mes", date.today().month))
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        # SQLite: strftime('%Y-%m-%d', inicio)
+        cursor.execute(
+            """SELECT strftime('%Y-%m-%d', inicio) AS dia, COUNT(*) as total
                FROM Sintomas
                WHERE usuario_id = ?
-                 AND YEAR(inicio) = ?
-                 AND MONTH(inicio) = ?
-               GROUP BY CAST(inicio AS DATE)""",
-            session["usuario_id"], ano, mes
+                 AND strftime('%Y', inicio) = ?
+                 AND strftime('%m', inicio) = ?
+               GROUP BY dia""",
+            (session["usuario_id"], str(ano), f"{mes:02d}")
         )
-        dias_com_sintoma = {row.dia: row.total for row in cursor.fetchall()}
+        dias_com_sintoma = {row["dia"]: row["total"] for row in cursor.fetchall()}
         conn.close()
-    except Exception:
-        dias_com_sintoma = {}
-
-    MESES_PT = [
-        "", "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-        "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
-    ]
-
-    mes_anterior = {"ano": ano if mes > 1 else ano-1, "mes": mes-1 if mes > 1 else 12}
-    mes_proximo  = {"ano": ano if mes < 12 else ano+1, "mes": mes+1 if mes < 12 else 1}
-
-    return render_template(
-        "calendario.html",
-        ano=ano, mes=mes,
-        nome_mes=MESES_PT[mes],
-        dias_no_mes=dias_no_mes,
-        offset=offset,
-        hoje=hoje,
-        dias_com_sintoma=dias_com_sintoma,
-        mes_anterior=mes_anterior,
-        mes_proximo=mes_proximo,
-    )
+        return jsonify(dias_com_sintoma)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
-# ── Visualizar dia ─────────────────────────────────────────────────────────────
-@app.route("/visualizar/<int:ano>/<int:mes>/<int:dia>")
+@app.route("/api/sintomas/dia")
 @login_required
-def visualizar(ano, mes, dia):
-    data_sel = date(ano, mes, dia)
+def api_sintomas_dia():
+    data_sel = request.args.get("data") # yyyy-mm-dd
+    if not data_sel:
+        return jsonify({"error": "Data não informada"}), 400
+
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -204,167 +281,104 @@ def visualizar(ano, mes, dia):
             """SELECT id, tipo, subtipo, descricao, inicio, fim
                FROM Sintomas
                WHERE usuario_id = ?
-                 AND CAST(inicio AS DATE) = ?
+                 AND strftime('%Y-%m-%d', inicio) = ?
                ORDER BY inicio""",
-            session["usuario_id"], data_sel
+            (session["usuario_id"], data_sel)
         )
-        sintomas = [
-            {"id": r.id, "tipo": r.tipo, "subtipo": r.subtipo,
-             "descricao": r.descricao, "inicio": r.inicio, "fim": r.fim}
-            for r in cursor.fetchall()
-        ]
+        sintomas = [dict(row) for row in cursor.fetchall()]
         conn.close()
+        return jsonify(sintomas)
     except Exception as e:
-        flash(f"Erro: {e}", "erro")
-        sintomas = []
-
-    MESES_PT = [
-        "", "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-        "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
-    ]
-    return render_template(
-        "visualizar.html",
-        sintomas=sintomas,
-        data_sel=data_sel,
-        dia=dia, mes=mes, ano=ano,
-        nome_mes=MESES_PT[mes],
-    )
+        return jsonify({"error": str(e)}), 500
 
 
-# ── Adicionar sintoma ──────────────────────────────────────────────────────────
-@app.route("/adicionar", methods=["GET", "POST"])
+@app.route("/api/sintomas", methods=["POST"])
 @login_required
-def adicionar():
-    data_str = request.args.get("data", str(date.today()))
+def api_adicionar_sintoma():
+    data = request.json
+    tipo       = data.get("tipo", "")
+    subtipo    = data.get("subtipo")
+    descricao  = data.get("descricao")
+    inicio     = data.get("inicio") # ISO string
+    fim        = data.get("fim")    # ISO string ou null
 
-    if request.method == "POST":
-        tipo       = request.form.get("tipo", "")
-        subtipo    = request.form.get("subtipo", None) or None
-        descricao  = request.form.get("descricao", None) or None
-        inicio_str = request.form.get("inicio", "")
-        fim_str    = request.form.get("fim", "") or None
+    if not tipo or not inicio:
+        return jsonify({"error": "Tipo e início são obrigatórios"}), 400
 
-        try:
-            inicio = datetime.strptime(inicio_str, "%Y-%m-%dT%H:%M")
-            fim    = datetime.strptime(fim_str,    "%Y-%m-%dT%H:%M") if fim_str else None
-        except ValueError:
-            flash("Datas inválidas.", "erro")
-            return render_template("adicionar.html", sintomas=SINTOMAS,
-                                   subtipos_dor=SUBTIPOS_DOR, data_str=data_str)
-
-        try:
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute(
-                """INSERT INTO Sintomas
-                       (usuario_id, tipo, subtipo, descricao, inicio, fim)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                session["usuario_id"], tipo, subtipo, descricao, inicio, fim
-            )
-            conn.commit()
-            conn.close()
-            flash("Sintoma adicionado!", "sucesso")
-            d = inicio.date()
-            return redirect(url_for("visualizar", ano=d.year, mes=d.month, dia=d.day))
-        except Exception as e:
-            flash(f"Erro ao salvar: {e}", "erro")
-
-    return render_template("adicionar.html", sintomas=SINTOMAS,
-                           subtipos_dor=SUBTIPOS_DOR, data_str=data_str)
-
-
-# ── Editar sintoma ─────────────────────────────────────────────────────────────
-@app.route("/editar/<int:sintoma_id>", methods=["GET", "POST"])
-@login_required
-def editar(sintoma_id):
     try:
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, tipo, subtipo, descricao, inicio, fim FROM Sintomas WHERE id=? AND usuario_id=?",
-            sintoma_id, session["usuario_id"]
+            """INSERT INTO Sintomas
+                   (usuario_id, tipo, subtipo, descricao, inicio, fim)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (session["usuario_id"], tipo, subtipo, descricao, inicio, fim)
         )
-        row = cursor.fetchone()
+        conn.commit()
         conn.close()
+        return jsonify({"message": "Sintoma adicionado com sucesso"}), 201
     except Exception as e:
-        flash(f"Erro: {e}", "erro")
-        return redirect(url_for("calendario"))
-
-    if not row:
-        flash("Sintoma não encontrado.", "erro")
-        return redirect(url_for("calendario"))
-
-    sintoma = {
-        "id": row.id, "tipo": row.tipo, "subtipo": row.subtipo,
-        "descricao": row.descricao, "inicio": row.inicio, "fim": row.fim
-    }
-
-    if request.method == "POST":
-        action = request.form.get("action", "salvar")
-
-        if action == "excluir":
-            try:
-                conn = get_db()
-                cursor = conn.cursor()
-                cursor.execute(
-                    "DELETE FROM Sintomas WHERE id=? AND usuario_id=?",
-                    sintoma_id, session["usuario_id"]
-                )
-                conn.commit()
-                conn.close()
-                flash("Sintoma excluído.", "sucesso")
-                d = row.inicio.date()
-                return redirect(url_for("visualizar", ano=d.year, mes=d.month, dia=d.day))
-            except Exception as e:
-                flash(f"Erro: {e}", "erro")
-        else:
-            tipo      = request.form.get("tipo", "")
-            subtipo   = request.form.get("subtipo", None) or None
-            descricao = request.form.get("descricao", None) or None
-            inicio_str = request.form.get("inicio", "")
-            fim_str    = request.form.get("fim", "") or None
-            try:
-                inicio = datetime.strptime(inicio_str, "%Y-%m-%dT%H:%M")
-                fim    = datetime.strptime(fim_str,    "%Y-%m-%dT%H:%M") if fim_str else None
-                conn = get_db()
-                cursor = conn.cursor()
-                cursor.execute(
-                    """UPDATE Sintomas SET tipo=?, subtipo=?, descricao=?,
-                       inicio=?, fim=?, atualizado_em=GETDATE()
-                       WHERE id=? AND usuario_id=?""",
-                    tipo, subtipo, descricao, inicio, fim,
-                    sintoma_id, session["usuario_id"]
-                )
-                conn.commit()
-                conn.close()
-                flash("Sintoma atualizado!", "sucesso")
-                d = inicio.date()
-                return redirect(url_for("visualizar", ano=d.year, mes=d.month, dia=d.day))
-            except Exception as e:
-                flash(f"Erro: {e}", "erro")
-
-    return render_template("editar.html", sintoma=sintoma,
-                           sintomas=SINTOMAS, subtipos_dor=SUBTIPOS_DOR)
+        return jsonify({"error": str(e)}), 500
 
 
-# ── API JSON (opcional) ────────────────────────────────────────────────────────
-@app.route("/api/sintomas/<int:ano>/<int:mes>")
+@app.route("/api/sintomas/<int:sintoma_id>", methods=["PUT", "DELETE"])
+@login_required
+def api_sintoma_detail(sintoma_id):
+    if request.method == "DELETE":
+        try:
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM Sintomas WHERE id=? AND usuario_id=?",
+                (sintoma_id, session["usuario_id"])
+            )
+            conn.commit()
+            conn.close()
+            return jsonify({"message": "Sintoma excluído"})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    
+    # PUT (Editar)
+    data = request.json
+    tipo      = data.get("tipo")
+    subtipo   = data.get("subtipo")
+    descricao = data.get("descricao")
+    inicio    = data.get("inicio")
+    fim       = data.get("fim")
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            """UPDATE Sintomas SET tipo=?, subtipo=?, descricao=?,
+               inicio=?, fim=?, atualizado_em=CURRENT_TIMESTAMP
+               WHERE id=? AND usuario_id=?""",
+            (tipo, subtipo, descricao, inicio, fim, sintoma_id, session["usuario_id"])
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"message": "Sintoma atualizado"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── API de Sintomas por Mês ───────────────────────────────────────────────────
+@app.route("/api/sintomas/mes/<int:ano>/<int:mes>")
 @login_required
 def api_sintomas_mes(ano, mes):
     try:
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, tipo, subtipo, descricao,
-                      FORMAT(inicio,'yyyy-MM-ddTHH:mm') AS inicio,
-                      FORMAT(fim,   'yyyy-MM-ddTHH:mm') AS fim
+            """SELECT id, tipo, subtipo, descricao, inicio, fim
                FROM Sintomas
-               WHERE usuario_id=? AND YEAR(inicio)=? AND MONTH(inicio)=?
+               WHERE usuario_id=? 
+                 AND strftime('%Y', inicio) = ? 
+                 AND strftime('%m', inicio) = ?
                ORDER BY inicio""",
-            session["usuario_id"], ano, mes
+            (session["usuario_id"], str(ano), f"{mes:02d}")
         )
-        data = [dict(zip([c[0] for c in cursor.description], row))
-                for row in cursor.fetchall()]
+        data = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return jsonify(data)
     except Exception as e:

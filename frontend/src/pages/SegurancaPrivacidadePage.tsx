@@ -35,7 +35,7 @@ export const SegurancaPrivacidadePage = () => {
       <div className='bg-brand-blue pt-12 pb-16 px-6 rounded-b-[40px] shadow-sm'>
         <div className='flex items-center relative w-full h-10'>
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/configuracoes")}
             className='absolute left-0 w-10 h-10 bg-white/20 flex items-center justify-center rounded-full text-brand-navy active:scale-95 transition-transform'
           >
             <ChevronLeft size={24} strokeWidth={2.5} />
@@ -58,7 +58,7 @@ export const SegurancaPrivacidadePage = () => {
           {user?.nome || "Usuário"}
         </h2>
         <p className='text-gray-500 font-medium'>
-          {user?.email || "usuario@mediary.com"}
+          {user?.email || ""}
         </p>
       </div>
 
