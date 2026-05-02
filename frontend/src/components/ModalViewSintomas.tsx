@@ -62,7 +62,6 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
   const [editTimeInicio, setEditTimeInicio] = useState("");
   const [editDateFim, setEditDateFim] = useState("");
   const [editTimeFim, setEditTimeFim] = useState("");
-  const [editIsContinuo, setEditIsContinuo] = useState(false);
   const [editDescricao, setEditDescricao] = useState("");
 
   if (!isOpen) return null;
@@ -76,7 +75,6 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
   const handleEditClick = (sintoma: any) => {
     setEditingSintomaId(sintoma.id);
     setConfirmDeleteId(null);
-    setEditIsContinuo(sintoma.is_continuo || false);
     setEditDescricao(sintoma.descricao || "");
 
     const d = new Date(sintoma.inicio);
@@ -126,8 +124,7 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
       inicio:
         parseFormatted(editDateInicio, editTimeInicio) ||
         new Date().toISOString(),
-      fim: editIsContinuo ? null : parseFormatted(editDateFim, editTimeFim),
-      is_continuo: editIsContinuo,
+      fim: parseFormatted(editDateFim, editTimeFim),
       descricao: editDescricao || null,
       atualizado_em: new Date().toISOString(),
     });
@@ -135,12 +132,24 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   const sintomasDoDia = sintomas.filter((s) => {
-    const sDate = new Date(s.inicio);
-    return (
-      sDate.getDate() === selectedDate.getDate() &&
-      sDate.getMonth() === selectedDate.getMonth() &&
-      sDate.getFullYear() === selectedDate.getFullYear()
-    );
+    const sInicio = new Date(s.inicio);
+    const sFim = s.fim ? new Date(s.fim) : null;
+    
+    // Normalizar datas para comparação (apenas dia, mês, ano)
+    const d = new Date(selectedDate);
+    d.setHours(0, 0, 0, 0);
+    
+    const inicio = new Date(sInicio);
+    inicio.setHours(0, 0, 0, 0);
+    
+    if (!sFim) {
+      return d.getTime() === inicio.getTime();
+    }
+    
+    const fim = new Date(sFim);
+    fim.setHours(0, 0, 0, 0);
+    
+    return d.getTime() >= inicio.getTime() && d.getTime() <= fim.getTime();
   });
 
   const editingSintoma = sintomas.find((s) => s.id === editingSintomaId);
@@ -211,47 +220,30 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              {!editIsContinuo && (
-                <div className='animate-fade-in'>
-                  <label className='block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1'>
-                    Terminou em{" "}
-                    <span className='italic text-[10px] text-gray-400 font-bold'>
-                      (opcional)
-                    </span>
-                    :
-                  </label>
-                  <div className='flex gap-2'>
-                    <input
-                      type='date'
-                      value={editDateFim}
-                      onChange={(e) => setEditDateFim(e.target.value)}
-                      className='flex-1 bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm'
-                    />
-                    <input
-                      type='time'
-                      value={editTimeFim}
-                      onChange={(e) => setEditTimeFim(e.target.value)}
-                      className='w-[110px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className='flex items-center gap-3 bg-brand-teal/5 py-3 px-4 rounded-2xl border-2 border-dashed border-brand-teal/20'>
-                <input
-                  type='checkbox'
-                  id='editIsContinuo'
-                  checked={editIsContinuo}
-                  onChange={(e) => setEditIsContinuo(e.target.checked)}
-                  className='w-5 h-5 rounded accent-brand-teal'
-                />
-                <label
-                  htmlFor='editIsContinuo'
-                  className='text-brand-navy font-black text-xs'
-                >
-                  Sintoma contínuo?
+              <div className='animate-fade-in'>
+                <label className='block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1'>
+                  Terminou em{" "}
+                  <span className='italic text-[10px] text-gray-400 font-bold'>
+                    (opcional)
+                  </span>
+                  :
                 </label>
+                <div className='flex gap-2'>
+                  <input
+                    type='date'
+                    value={editDateFim}
+                    onChange={(e) => setEditDateFim(e.target.value)}
+                    className='flex-1 bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm'
+                  />
+                  <input
+                    type='time'
+                    value={editTimeFim}
+                    onChange={(e) => setEditTimeFim(e.target.value)}
+                    className='w-[110px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm text-center'
+                  />
+                </div>
               </div>
+
 
               <div className='animate-fade-in'>
                 <label className='block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1'>
@@ -341,23 +333,31 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
                             <Icon size={24} strokeWidth={2.5} />
                           </div>
 
-                          {/* Coluna 2: Detalhes Centralizados (Data e Contínuo) */}
+                          {/* Coluna 2: Detalhes Centralizados (Data Início e Fim Empilhadas) */}
                           <div className='flex flex-col items-center gap-1.5 flex-1 min-w-0'>
-                            <span className='text-sm font-black text-brand-blue bg-brand-blue/5 px-4 py-1 rounded-xl shadow-sm'>
-                              {new Date(sintoma.inicio).toLocaleDateString(
-                                "pt-BR",
-                                {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                },
-                              )}
-                            </span>
-
-                            {sintoma.is_continuo && (
-                              <span className='text-[9px] font-black text-brand-teal bg-brand-teal/10 px-3 py-1 rounded-full uppercase'>
-                                Contínuo
+                            <div className="flex flex-col items-center gap-1">
+                              <span className='text-[11px] font-black text-[#007AFF] bg-[#007AFF]/10 px-3 py-0.5 rounded-lg shadow-sm border border-[#007AFF]/20'>
+                                {new Date(sintoma.inicio).toLocaleDateString(
+                                  "pt-BR",
+                                  {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                  },
+                                )}
                               </span>
-                            )}
+                              
+                              {sintoma.fim && (
+                                <span className='text-[11px] font-black text-[#FF3B30] bg-[#FF3B30]/10 px-3 py-0.5 rounded-lg shadow-sm border border-[#FF3B30]/20'>
+                                  {new Date(sintoma.fim).toLocaleDateString(
+                                    "pt-BR",
+                                    {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                    },
+                                  )}
+                                </span>
+                              )}
+                            </div>
 
                             {sintoma.subtipo && (
                               <p className='text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate max-w-full'>

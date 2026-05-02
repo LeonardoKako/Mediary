@@ -36,7 +36,6 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const [fimDate, setFimDate] = useState('');
   const [fimTime, setFimTime] = useState('');
-  const [isContinuo, setIsContinuo] = useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -52,7 +51,6 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
       
       setFimDate('');
       setFimTime('');
-      setIsContinuo(false);
     }
   }, [isOpen, selectedDate]);
 
@@ -74,7 +72,7 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
     };
 
     const dataInicio = parseFormatted(addDate, addTime) || new Date().toISOString();
-    const dataFim = isContinuo ? null : parseFormatted(fimDate, fimTime);
+    const dataFim = parseFormatted(fimDate, fimTime);
 
     addSintoma({
       id: Date.now(),
@@ -84,7 +82,6 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
       descricao: outroText || null,
       inicio: dataInicio,
       fim: dataFim,
-      is_continuo: isContinuo,
       criado_em: new Date().toISOString(),
       atualizado_em: new Date().toISOString()
     });
@@ -153,40 +150,26 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {!isContinuo && (
-            <div className="animate-fade-in">
-              <label className="block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1 text-center">
-                Quando terminou? <span className="italic font-bold text-[10px] text-gray-400">(opcional)</span>
-              </label>
-              <div className="flex gap-2 justify-center">
-                <input
-                  type='date'
-                  value={fimDate}
-                  onChange={(e) => setFimDate(e.target.value)}
-                  className='flex-1 max-w-[170px] bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-black text-base outline-none focus:border-brand-blue shadow-sm text-center'
-                />
-                <input
-                  type='time'
-                  value={fimTime}
-                  onChange={(e) => setFimTime(e.target.value)}
-                  className='w-[110px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-4 text-brand-navy font-black text-base outline-none focus:border-brand-blue shadow-sm text-center'
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-center gap-3 bg-brand-teal/5 py-4 rounded-2xl border-2 border-dashed border-brand-teal/20">
-            <input 
-              type="checkbox" 
-              id="isContinuo"
-              checked={isContinuo}
-              onChange={(e) => setIsContinuo(e.target.checked)}
-              className="w-6 h-6 rounded-lg accent-brand-teal cursor-pointer"
-            />
-            <label htmlFor="isContinuo" className="text-brand-navy font-black text-sm cursor-pointer">
-              Este sintoma está sendo contínuo?
+          <div className="animate-fade-in">
+            <label className="block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1 text-center">
+              Quando terminou? <span className="italic font-bold text-[10px] text-gray-400">(opcional)</span>
             </label>
+            <div className="flex gap-2 justify-center">
+              <input
+                type='date'
+                value={fimDate}
+                onChange={(e) => setFimDate(e.target.value)}
+                className='flex-1 max-w-[170px] bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-black text-base outline-none focus:border-brand-blue shadow-sm text-center'
+              />
+              <input
+                type='time'
+                value={fimTime}
+                onChange={(e) => setFimTime(e.target.value)}
+                className='w-[110px] bg-white border-2 border-gray-200 rounded-2xl px-2 py-4 text-brand-navy font-black text-base outline-none focus:border-brand-blue shadow-sm text-center'
+              />
+            </div>
           </div>
+
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">

@@ -3,7 +3,7 @@ import { useSintomasStore } from '../store/useSintomasStore';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const Calendar: React.FC<{ onDayClick?: (day: number) => void }> = ({ onDayClick }) => {
-  const { selectedDate, setSelectedDate } = useSintomasStore();
+  const { selectedDate, setSelectedDate, sintomas } = useSintomasStore();
   
   // Estado para controlar qual mês estamos visualizando
   const [viewDate, setViewDate] = useState(new Date(selectedDate));
@@ -39,6 +39,25 @@ export const Calendar: React.FC<{ onDayClick?: (day: number) => void }> = ({ onD
     if (onDayClick) onDayClick(day);
   };
 
+  const hasSintomaOnDay = (day: number) => {
+    const targetDate = new Date(year, month, day);
+    targetDate.setHours(0, 0, 0, 0);
+
+    return sintomas.some(s => {
+      const inicio = new Date(s.inicio);
+      inicio.setHours(0, 0, 0, 0);
+      
+      if (!s.fim) {
+        return targetDate.getTime() === inicio.getTime();
+      }
+
+      const fim = new Date(s.fim);
+      fim.setHours(0, 0, 0, 0);
+
+      return targetDate.getTime() >= inicio.getTime() && targetDate.getTime() <= fim.getTime();
+    });
+  };
+
   return (
     <div className="w-full py-4">
       <div className="flex items-center justify-between mb-8 px-2">
@@ -70,15 +89,20 @@ export const Calendar: React.FC<{ onDayClick?: (day: number) => void }> = ({ onD
                              selectedDate.getMonth() === month && 
                              selectedDate.getFullYear() === year;
           
+          const hasSintoma = hasSintomaOnDay(day);
+          
           return (
             <button
               key={day}
               onClick={() => handleDayClick(day)}
-              className={`h-12 flex items-center justify-center text-xl font-medium transition-all mx-auto w-12
+              className={`h-12 flex flex-col items-center justify-center text-xl font-medium transition-all mx-auto w-12 relative
                 ${isSelected ? 'bg-brand-active text-white rounded-2xl ring-2 ring-brand-active ring-offset-2 ring-offset-brand-blue' : 'text-brand-navy hover:bg-black/5 rounded-2xl'}
               `}
             >
-              {day}
+              <span>{day}</span>
+              {hasSintoma && (
+                <span className={`w-1.5 h-1.5 rounded-full absolute bottom-1.5 ${isSelected ? 'bg-white' : 'bg-brand-blue'}`} />
+              )}
             </button>
           );
         })}
