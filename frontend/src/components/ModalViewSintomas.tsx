@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useSintomasStore } from "../store/useSintomasStore";
 import { Button } from "./Button";
+import { toast } from "react-toastify";
 
 interface Props {
   isOpen: boolean;
@@ -51,11 +52,19 @@ const getIconForType = (tipo: string) => {
 };
 
 export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { sintomas, selectedDate, removeSintoma, updateSintoma } =
-    useSintomasStore();
+  const {
+    sintomas,
+    selectedDate,
+    excluirSintoma,
+    atualizarSintoma,
+    fetchSintomasDia,
+    fetchCalendarioInfo,
+    isLoading,
+  } = useSintomasStore();
 
   const [editingSintomaId, setEditingSintomaId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [loadingAction, setLoadingAction] = useState(false);
 
   // States for the edit form
   const [editDateInicio, setEditDateInicio] = useState("");
@@ -63,6 +72,15 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
   const [editDateFim, setEditDateFim] = useState("");
   const [editTimeFim, setEditTimeFim] = useState("");
   const [editDescricao, setEditDescricao] = useState("");
+
+  React.useEffect(() => {
+    if (isOpen) {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getDate()).padStart(2, "0");
+      fetchSintomasDia(`${year}-${month}-${day}`);
+    }
+  }, [isOpen, selectedDate, fetchSintomasDia]);
 
   if (!isOpen) return null;
 
@@ -103,54 +121,49 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingSintomaId) return;
+    setLoadingAction(true);
 
     const parseFormatted = (dateStr: string, timeStr: string) => {
       if (!dateStr) return null;
-      const [year, month, day] = dateStr.split("-");
-      const [hour, minute] = (timeStr || "00:00").split(":");
-      const date = new Date(
-        Number(year),
-        Number(month) - 1,
-        Number(day),
-        Number(hour),
-        Number(minute),
-      );
-      return date.toISOString();
+      return `${dateStr} ${timeStr || "00:00"}:00`;
     };
 
-    updateSintoma(editingSintomaId, {
-      inicio:
+    try {
+      const dataInicio =
         parseFormatted(editDateInicio, editTimeInicio) ||
-        new Date().toISOString(),
-      fim: parseFormatted(editDateFim, editTimeFim),
-      descricao: editDescricao || null,
-      atualizado_em: new Date().toISOString(),
-    });
-    setEditingSintomaId(null);
+        new Date().toISOString();
+      const dataFim = parseFormatted(editDateFim, editTimeFim);
+
+      await atualizarSintoma(editingSintomaId, {
+        tipo: editingSintoma.tipo,
+        subtipo: editingSintoma.subtipo,
+        inicio: dataInicio,
+        fim: dataFim,
+        descricao: editDescricao || null,
+      });
+
+      // Recarrega o dia e o calendário
+      await fetchSintomasDia(editDateInicio);
+
+      const d = new Date(editDateInicio + "T00:00:00");
+      fetchCalendarioInfo(d.getFullYear(), d.getMonth() + 1);
+
+      toast.success("Sintoma atualizado com sucesso!");
+      setEditingSintomaId(null);
+    } catch (error: any) {
+      const msg = error.response?.data?.error || "Erro ao editar sintoma";
+      toast.error(msg);
+      console.error("Erro ao editar:", error);
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
-  const sintomasDoDia = sintomas.filter((s) => {
-    const sInicio = new Date(s.inicio);
-    const sFim = s.fim ? new Date(s.fim) : null;
-    
-    // Normalizar datas para comparação (apenas dia, mês, ano)
-    const d = new Date(selectedDate);
-    d.setHours(0, 0, 0, 0);
-    
-    const inicio = new Date(sInicio);
-    inicio.setHours(0, 0, 0, 0);
-    
-    if (!sFim) {
-      return d.getTime() === inicio.getTime();
-    }
-    
-    const fim = new Date(sFim);
-    fim.setHours(0, 0, 0, 0);
-    
-    return d.getTime() >= inicio.getTime() && d.getTime() <= fim.getTime();
-  });
+  // Removemos o filtro client-side porque o backend já retorna os sintomas do dia correto.
+  // Isso evita problemas onde o fuso horário (ex: UTC-3) desloca o sintoma para o dia anterior/posterior no JS.
+  const sintomasDoDia = sintomas;
 
   const editingSintoma = sintomas.find((s) => s.id === editingSintomaId);
 
@@ -244,7 +257,6 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-
               <div className='animate-fade-in'>
                 <label className='block text-xs font-black text-brand-navy/60 mb-2 uppercase ml-1'>
                   Observações:
@@ -261,16 +273,41 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
             <div className='flex flex-col gap-3'>
               <Button
                 onClick={handleSaveEdit}
+                isLoading={loadingAction}
                 className='text-white! shadow-[0_6px_0_0_var(--color-brand-blue-dark)]'
               >
                 SALVAR ALTERAÇÕES
               </Button>
               <button
-                onClick={() => {
+                disabled={loadingAction}
+                onClick={async () => {
                   if (confirmDeleteId === editingSintoma.id) {
-                    removeSintoma(editingSintoma.id);
-                    setEditingSintomaId(null);
-                    setConfirmDeleteId(null);
+                    setLoadingAction(true);
+                    try {
+                      await excluirSintoma(editingSintoma.id);
+                      const year = selectedDate.getFullYear();
+                      const month = String(
+                        selectedDate.getMonth() + 1,
+                      ).padStart(2, "0");
+                      const day = String(selectedDate.getDate()).padStart(
+                        2,
+                        "0",
+                      );
+
+                      await fetchSintomasDia(`${year}-${month}-${day}`);
+                      fetchCalendarioInfo(year, Number(month));
+
+                      toast.success("Sintoma excluído!");
+                      setEditingSintomaId(null);
+                      setConfirmDeleteId(null);
+                    } catch (error: any) {
+                      const msg =
+                        error.response?.data?.error ||
+                        "Erro ao excluir sintoma";
+                      toast.error(msg);
+                    } finally {
+                      setLoadingAction(false);
+                    }
                   } else {
                     setConfirmDeleteId(editingSintoma.id);
                   }
@@ -282,7 +319,9 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
                 }`}
               >
                 {confirmDeleteId === editingSintoma.id
-                  ? "CONFIRMAR EXCLUSÃO?"
+                  ? loadingAction
+                    ? "EXCLUINDO..."
+                    : "CONFIRMAR EXCLUSÃO?"
                   : "EXCLUIR REGISTRO"}
               </button>
             </div>
@@ -302,7 +341,14 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
               </button>
             </div>
 
-            {sintomasDoDia.length === 0 ? (
+            {isLoading ? (
+              <div className='text-center py-12'>
+                <div className='animate-spin w-10 h-10 border-4 border-brand-blue border-t-transparent rounded-full mx-auto mb-4' />
+                <p className='text-brand-navy font-bold text-sm'>
+                  Carregando...
+                </p>
+              </div>
+            ) : sintomasDoDia.length === 0 ? (
               <div className='text-center py-8 bg-white rounded-2xl'>
                 <p className='text-gray-400 font-medium'>
                   Nenhum sintoma registrado neste dia.
@@ -335,7 +381,7 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
 
                           {/* Coluna 2: Detalhes Centralizados (Data Início e Fim Empilhadas) */}
                           <div className='flex flex-col items-center gap-1.5 flex-1 min-w-0'>
-                            <div className="flex flex-col items-center gap-1">
+                            <div className='flex flex-col items-center gap-1'>
                               <span className='text-[11px] font-black text-[#007AFF] bg-[#007AFF]/10 px-3 py-0.5 rounded-lg shadow-sm border border-[#007AFF]/20'>
                                 {new Date(sintoma.inicio).toLocaleDateString(
                                   "pt-BR",
@@ -345,7 +391,7 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
                                   },
                                 )}
                               </span>
-                              
+
                               {sintoma.fim && (
                                 <span className='text-[11px] font-black text-[#FF3B30] bg-[#FF3B30]/10 px-3 py-0.5 rounded-lg shadow-sm border border-[#FF3B30]/20'>
                                   {new Date(sintoma.fim).toLocaleDateString(

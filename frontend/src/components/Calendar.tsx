@@ -3,7 +3,7 @@ import { useSintomasStore } from '../store/useSintomasStore';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const Calendar: React.FC<{ onDayClick?: (day: number) => void }> = ({ onDayClick }) => {
-  const { selectedDate, setSelectedDate, sintomas } = useSintomasStore();
+  const { selectedDate, setSelectedDate, calendarioInfo, fetchCalendarioInfo } = useSintomasStore();
   
   // Estado para controlar qual mês estamos visualizando
   const [viewDate, setViewDate] = useState(new Date(selectedDate));
@@ -33,6 +33,11 @@ export const Calendar: React.FC<{ onDayClick?: (day: number) => void }> = ({ onD
   const handlePrevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const handleNextMonth = () => setViewDate(new Date(year, month + 1, 1));
 
+  // Carrega informações de sintomas para o mês visualizado
+  React.useEffect(() => {
+    fetchCalendarioInfo(year, month + 1);
+  }, [year, month, fetchCalendarioInfo]);
+
   const handleDayClick = (day: number) => {
     const newDate = new Date(year, month, day);
     setSelectedDate(newDate);
@@ -40,22 +45,8 @@ export const Calendar: React.FC<{ onDayClick?: (day: number) => void }> = ({ onD
   };
 
   const hasSintomaOnDay = (day: number) => {
-    const targetDate = new Date(year, month, day);
-    targetDate.setHours(0, 0, 0, 0);
-
-    return sintomas.some(s => {
-      const inicio = new Date(s.inicio);
-      inicio.setHours(0, 0, 0, 0);
-      
-      if (!s.fim) {
-        return targetDate.getTime() === inicio.getTime();
-      }
-
-      const fim = new Date(s.fim);
-      fim.setHours(0, 0, 0, 0);
-
-      return targetDate.getTime() >= inicio.getTime() && targetDate.getTime() <= fim.getTime();
-    });
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return !!calendarioInfo[dateStr];
   };
 
   return (

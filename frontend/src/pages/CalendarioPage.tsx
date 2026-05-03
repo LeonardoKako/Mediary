@@ -10,14 +10,10 @@ import { ModalViewSintomas } from "../components/ModalViewSintomas";
 export const CalendarioPage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const { loadMockSintomas, setSelectedDate } = useSintomasStore();
+  const { setSelectedDate } = useSintomasStore();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
-
-  useEffect(() => {
-    loadMockSintomas();
-  }, [loadMockSintomas]);
 
   // const sintomasDoDia = sintomas.filter((s) => {
   //   const sDate = new Date(s.inicio);

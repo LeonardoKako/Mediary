@@ -6,7 +6,7 @@ import os
 import sqlite3
 from flask_cors import CORS
 from functools import wraps
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import calendar as cal_mod
 from flask import (
     Flask, render_template, request, redirect,
@@ -250,19 +250,42 @@ def api_calendario_info():
     try:
         conn = get_db()
         cursor = conn.cursor()
-        # SQLite: strftime('%Y-%m-%d', inicio)
+        
+        # Busca sintomas que podem ter intersecção com o mês solicitado
         cursor.execute(
-            """SELECT strftime('%Y-%m-%d', inicio) AS dia, COUNT(*) as total
-               FROM Sintomas
-               WHERE usuario_id = ?
-                 AND strftime('%Y', inicio) = ?
-                 AND strftime('%m', inicio) = ?
-               GROUP BY dia""",
-            (session["usuario_id"], str(ano), f"{mes:02d}")
+            """SELECT inicio, fim FROM Sintomas 
+               WHERE usuario_id=? 
+                 AND (
+                    (strftime('%Y-%m', inicio) <= ?)
+                    AND
+                    (fim IS NULL OR strftime('%Y-%m', fim) >= ?)
+                 )
+            """,
+            (session["usuario_id"], f"{ano}-{mes:02d}", f"{ano}-{mes:02d}")
         )
-        dias_com_sintoma = {row["dia"]: row["total"] for row in cursor.fetchall()}
+        rows = cursor.fetchall()
+        
+        calendario = {}
+        for row in rows:
+            # Formatos esperados: YYYY-MM-DD ou ISO
+            ini_str = row["inicio"][:10]
+            fim_str = row["fim"][:10] if row["fim"] else ini_str
+            
+            try:
+                ini_dt = datetime.strptime(ini_str, "%Y-%m-%d").date()
+                fim_dt = datetime.strptime(fim_str, "%Y-%m-%d").date()
+                
+                curr = ini_dt
+                while curr <= fim_dt:
+                    if curr.year == ano and curr.month == mes:
+                        d_str = curr.strftime("%Y-%m-%d")
+                        calendario[d_str] = calendario.get(d_str, 0) + 1
+                    curr += timedelta(days=1)
+            except Exception:
+                continue # Pula se houver erro de formato de data
+                    
         conn.close()
-        return jsonify(dias_com_sintoma)
+        return jsonify(calendario)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -281,9 +304,13 @@ def api_sintomas_dia():
             """SELECT id, tipo, subtipo, descricao, inicio, fim
                FROM Sintomas
                WHERE usuario_id = ?
-                 AND strftime('%Y-%m-%d', inicio) = ?
+                 AND (
+                    (fim IS NULL AND strftime('%Y-%m-%d', inicio) = ?)
+                    OR
+                    (fim IS NOT NULL AND strftime('%Y-%m-%d', inicio) <= ? AND strftime('%Y-%m-%d', fim) >= ?)
+                 )
                ORDER BY inicio""",
-            (session["usuario_id"], data_sel)
+            (session["usuario_id"], data_sel, data_sel, data_sel)
         )
         sintomas = [dict(row) for row in cursor.fetchall()]
         conn.close()
@@ -340,15 +367,24 @@ def api_sintoma_detail(sintoma_id):
     
     # PUT (Editar)
     data = request.json
-    tipo      = data.get("tipo")
-    subtipo   = data.get("subtipo")
-    descricao = data.get("descricao")
-    inicio    = data.get("inicio")
-    fim       = data.get("fim")
-
     try:
         conn = get_db()
         cursor = conn.cursor()
+        
+        # Busca o sintoma atual para preencher campos ausentes
+        cursor.execute("SELECT * FROM Sintomas WHERE id=? AND usuario_id=?", (sintoma_id, session["usuario_id"]))
+        sintoma_atual = cursor.fetchone()
+        
+        if not sintoma_atual:
+            conn.close()
+            return jsonify({"error": "Sintoma não encontrado"}), 404
+            
+        tipo      = data.get("tipo", sintoma_atual["tipo"])
+        subtipo   = data.get("subtipo", sintoma_atual["subtipo"])
+        descricao = data.get("descricao", sintoma_atual["descricao"])
+        inicio    = data.get("inicio", sintoma_atual["inicio"])
+        fim       = data.get("fim", sintoma_atual["fim"])
+
         cursor.execute(
             """UPDATE Sintomas SET tipo=?, subtipo=?, descricao=?,
                inicio=?, fim=?, atualizado_em=CURRENT_TIMESTAMP
@@ -359,6 +395,7 @@ def api_sintoma_detail(sintoma_id):
         conn.close()
         return jsonify({"message": "Sintoma atualizado"})
     except Exception as e:
+        if 'conn' in locals(): conn.close()
         return jsonify({"error": str(e)}), 500
 
 
@@ -369,14 +406,18 @@ def api_sintomas_mes(ano, mes):
     try:
         conn = get_db()
         cursor = conn.cursor()
+        # Busca sintomas que abrangem qualquer parte do mês
         cursor.execute(
             """SELECT id, tipo, subtipo, descricao, inicio, fim
                FROM Sintomas
                WHERE usuario_id=? 
-                 AND strftime('%Y', inicio) = ? 
-                 AND strftime('%m', inicio) = ?
+                 AND (
+                    (strftime('%Y-%m', inicio) <= ?)
+                    AND
+                    (fim IS NULL OR strftime('%Y-%m', fim) >= ?)
+                 )
                ORDER BY inicio""",
-            (session["usuario_id"], str(ano), f"{mes:02d}")
+            (session["usuario_id"], f"{ano}-{mes:02d}", f"{ano}-{mes:02d}")
         )
         data = [dict(row) for row in cursor.fetchall()]
         conn.close()
