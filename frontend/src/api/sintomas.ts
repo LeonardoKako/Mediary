@@ -1,4 +1,5 @@
-import api from './axios';
+import api from "./axios";
+import type { CreateSintomaDTO, UpdateSintomaDTO } from "../types/sintoma";
 
 export const sintomasService = {
   getSintomasMes: async (ano: number, mes: number) => {
@@ -7,26 +8,26 @@ export const sintomasService = {
   },
   getCalendarioInfo: async (ano: number, mes: number) => {
     const response = await api.get(`/sintomas/calendario`, {
-      params: { ano, mes }
+      params: { ano, mes },
     });
     return response.data;
   },
   getSintomasDia: async (data: string) => {
     const response = await api.get(`/sintomas/dia`, {
-      params: { data }
+      params: { data },
     });
     return response.data;
   },
-  adicionar: async (sintoma: any) => {
-    const response = await api.post('/sintomas', sintoma);
+  adicionar: async (dto: CreateSintomaDTO) => {
+    const response = await api.post("/sintomas", dto);
     return response.data;
   },
-  atualizar: async (id: number, sintoma: any) => {
-    const response = await api.put(`/sintomas/${id}`, sintoma);
+  atualizar: async (id: number, dto: UpdateSintomaDTO) => {
+    const response = await api.put(`/sintomas/${id}`, dto);
     return response.data;
   },
   excluir: async (id: number) => {
     const response = await api.delete(`/sintomas/${id}`);
     return response.data;
-  }
+  },
 };

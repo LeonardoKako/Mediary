@@ -1,6 +1,10 @@
-import { create } from 'zustand';
-import type { Sintoma } from '../features/sintomas/sintomasSchema';
-import { sintomasService } from '../api/sintomas';
+import { create } from "zustand";
+import type {
+  Sintoma,
+  CreateSintomaDTO,
+  UpdateSintomaDTO,
+} from "../types/sintoma";
+import { sintomasService } from "../api/sintomas";
 
 interface SintomasState {
   sintomas: Sintoma[];
@@ -11,12 +15,12 @@ interface SintomasState {
   fetchSintomasMes: (ano: number, mes: number) => Promise<void>;
   fetchCalendarioInfo: (ano: number, mes: number) => Promise<void>;
   fetchSintomasDia: (dataStr: string) => Promise<void>;
-  adicionarSintoma: (sintoma: Omit<Sintoma, 'id'>) => Promise<void>;
-  atualizarSintoma: (id: number, updates: Partial<Sintoma>) => Promise<void>;
+  adicionarSintoma: (dto: CreateSintomaDTO) => Promise<void>;
+  atualizarSintoma: (id: number, dto: UpdateSintomaDTO) => Promise<void>;
   excluirSintoma: (id: number) => Promise<void>;
 }
 
-export const useSintomasStore = create<SintomasState>((set, get) => ({
+export const useSintomasStore = create<SintomasState>((set) => ({
   sintomas: [],
   calendarioInfo: {},
   isLoading: false,
@@ -52,18 +56,18 @@ export const useSintomasStore = create<SintomasState>((set, get) => ({
     }
   },
 
-  adicionarSintoma: async (sintoma) => {
-    await sintomasService.adicionar(sintoma);
+  adicionarSintoma: async (dto) => {
+    await sintomasService.adicionar(dto);
   },
 
-  atualizarSintoma: async (id, updates) => {
-    await sintomasService.atualizar(id, updates);
+  atualizarSintoma: async (id, dto) => {
+    await sintomasService.atualizar(id, dto);
   },
 
   excluirSintoma: async (id) => {
     await sintomasService.excluir(id);
     set((state) => ({
-      sintomas: state.sintomas.filter(s => s.id !== id)
+      sintomas: state.sintomas.filter((s) => s.id !== id),
     }));
-  }
+  },
 }));
