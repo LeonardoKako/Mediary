@@ -73,6 +73,11 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
   const [editTimeFim, setEditTimeFim] = useState("");
   const [editDescricao, setEditDescricao] = useState("");
 
+  const todayStr = new Date().toISOString().split("T")[0];
+  const lastYear = new Date();
+  lastYear.setFullYear(lastYear.getFullYear() - 1);
+  const minDateStr = lastYear.toISOString().split("T")[0];
+
   React.useEffect(() => {
     if (isOpen) {
       const year = selectedDate.getFullYear();
@@ -135,6 +140,38 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
         parseFormatted(editDateInicio, editTimeInicio) ||
         new Date().toISOString();
       const dataFim = parseFormatted(editDateFim, editTimeFim);
+
+      // Validações de data
+      const dInicio = new Date(dataInicio);
+      const agora = new Date();
+      const umAnoAtras = new Date();
+      umAnoAtras.setFullYear(agora.getFullYear() - 1);
+
+      if (dInicio > agora) {
+        toast.error("O sintoma não pode iniciar no futuro");
+        setLoadingAction(false);
+        return;
+      }
+
+      if (dInicio < umAnoAtras) {
+        toast.error("O registro é limitado a no máximo 1 ano atrás");
+        setLoadingAction(false);
+        return;
+      }
+
+      if (dataFim) {
+        const dFim = new Date(dataFim);
+        if (dFim < dInicio) {
+          toast.error("A data de término não pode ser anterior à de início");
+          setLoadingAction(false);
+          return;
+        }
+        if (dFim > agora) {
+          toast.error("O sintoma não pode terminar no futuro");
+          setLoadingAction(false);
+          return;
+        }
+      }
 
       await atualizarSintoma(editingSintomaId, {
         tipo: editingSintoma.tipo,
@@ -221,6 +258,8 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
                   <input
                     type='date'
                     value={editDateInicio}
+                    max={todayStr}
+                    min={minDateStr}
                     onChange={(e) => setEditDateInicio(e.target.value)}
                     className='flex-1 bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm'
                   />
@@ -245,6 +284,8 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
                   <input
                     type='date'
                     value={editDateFim}
+                    max={todayStr}
+                    min={editDateInicio || minDateStr}
                     onChange={(e) => setEditDateFim(e.target.value)}
                     className='flex-1 bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-bold text-sm outline-none focus:border-brand-blue shadow-sm'
                   />

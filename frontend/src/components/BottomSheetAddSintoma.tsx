@@ -59,6 +59,11 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
   const [fimDate, setFimDate] = useState("");
   const [fimTime, setFimTime] = useState("");
 
+  const todayStr = new Date().toISOString().split("T")[0];
+  const lastYear = new Date();
+  lastYear.setFullYear(lastYear.getFullYear() - 1);
+  const minDateStr = lastYear.toISOString().split("T")[0];
+
   React.useEffect(() => {
     if (isOpen) {
       const now = new Date();
@@ -90,6 +95,38 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
       const dataInicio =
         parseFormatted(addDate, addTime) || new Date().toISOString();
       const dataFim = parseFormatted(fimDate, fimTime);
+
+      // Validações de data
+      const dInicio = new Date(dataInicio);
+      const agora = new Date();
+      const umAnoAtras = new Date();
+      umAnoAtras.setFullYear(agora.getFullYear() - 1);
+
+      if (dInicio > agora) {
+        toast.error("O sintoma não pode iniciar no futuro");
+        setLoading(false);
+        return;
+      }
+
+      if (dInicio < umAnoAtras) {
+        toast.error("O registro é limitado a no máximo 1 ano atrás");
+        setLoading(false);
+        return;
+      }
+
+      if (dataFim) {
+        const dFim = new Date(dataFim);
+        if (dFim < dInicio) {
+          toast.error("A data de término não pode ser anterior à de início");
+          setLoading(false);
+          return;
+        }
+        if (dFim > agora) {
+          toast.error("O sintoma não pode terminar no futuro");
+          setLoading(false);
+          return;
+        }
+      }
 
       await adicionarSintoma({
         tipo: selectedType,
@@ -161,6 +198,8 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
               <input
                 type='date'
                 value={addDate}
+                max={todayStr}
+                min={minDateStr}
                 onChange={(e) => setAddDate(e.target.value)}
                 className='flex-1 max-w-[170px] bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-black text-base outline-none focus:border-brand-blue shadow-sm text-center'
               />
@@ -184,6 +223,8 @@ export const BottomSheetAddSintoma: React.FC<Props> = ({ isOpen, onClose }) => {
               <input
                 type='date'
                 value={fimDate}
+                max={todayStr}
+                min={addDate || minDateStr}
                 onChange={(e) => setFimDate(e.target.value)}
                 className='flex-1 max-w-[170px] bg-white border-2 border-gray-200 rounded-2xl px-3 py-4 text-brand-navy font-black text-base outline-none focus:border-brand-blue shadow-sm text-center'
               />

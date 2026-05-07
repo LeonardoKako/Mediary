@@ -128,7 +128,7 @@ def login():
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, nome, senha_hash FROM Usuarios WHERE email = ?", (email,)
+            "SELECT id, nome, email, senha_hash FROM Usuarios WHERE email = ?", (email,)
         )
         row = cursor.fetchone()
         conn.close()
@@ -138,7 +138,7 @@ def login():
             session["usuario_nome"] = row["nome"]
             return jsonify({
                 "message": "Login realizado com sucesso",
-                "user": {"id": row["id"], "nome": row["nome"]}
+                "user": {"id": row["id"], "nome": row["nome"], "email": row["email"]}
             })
         else:
             return jsonify({"error": "E-mail ou senha incorretos"}), 401
@@ -333,6 +333,37 @@ def api_adicionar_sintoma():
         return jsonify({"error": "Tipo e início são obrigatórios"}), 400
 
     try:
+        agora = datetime.now()
+        um_ano_atras = agora - timedelta(days=365)
+        
+        # Validação do formato e existência real da data de início
+        try:
+            # O frontend envia YYYY-MM-DD HH:mm:ss ou ISO
+            if 'T' in inicio:
+                ini_dt = datetime.fromisoformat(inicio.replace('Z', '+00:00'))
+            else:
+                ini_dt = datetime.strptime(inicio, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return jsonify({"error": "Formato de data de início inválido ou data inexistente"}), 400
+
+        if ini_dt > agora + timedelta(minutes=5): # Tolerância de 5 min
+            return jsonify({"error": "A data de início não pode ser futura"}), 400
+        if ini_dt < um_ano_atras:
+            return jsonify({"error": "O registro é limitado a no máximo 1 ano atrás"}), 400
+
+        if fim:
+            try:
+                if 'T' in fim:
+                    fim_dt = datetime.fromisoformat(fim.replace('Z', '+00:00'))
+                else:
+                    fim_dt = datetime.strptime(fim, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                return jsonify({"error": "Formato de data de fim inválido ou data inexistente"}), 400
+
+            if fim_dt < ini_dt:
+                return jsonify({"error": "A data de término não pode ser anterior à de início"}), 400
+            if fim_dt > agora + timedelta(minutes=5):
+                return jsonify({"error": "A data de término não pode ser futura"}), 400
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute(
@@ -384,6 +415,38 @@ def api_sintoma_detail(sintoma_id):
         descricao = data.get("descricao", sintoma_atual["descricao"])
         inicio    = data.get("inicio", sintoma_atual["inicio"])
         fim       = data.get("fim", sintoma_atual["fim"])
+
+        agora = datetime.now()
+        um_ano_atras = agora - timedelta(days=365)
+
+        # Validação Início
+        try:
+            if 'T' in inicio:
+                ini_dt = datetime.fromisoformat(inicio.replace('Z', '+00:00'))
+            else:
+                ini_dt = datetime.strptime(inicio, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return jsonify({"error": "Formato de data de início inválido ou data inexistente"}), 400
+
+        if ini_dt > agora + timedelta(minutes=5):
+            return jsonify({"error": "A data de início não pode ser futura"}), 400
+        if ini_dt < um_ano_atras:
+            return jsonify({"error": "O registro é limitado a no máximo 1 ano atrás"}), 400
+
+        # Validação Fim
+        if fim:
+            try:
+                if 'T' in fim:
+                    fim_dt = datetime.fromisoformat(fim.replace('Z', '+00:00'))
+                else:
+                    fim_dt = datetime.strptime(fim, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                return jsonify({"error": "Formato de data de fim inválido ou data inexistente"}), 400
+
+            if fim_dt < ini_dt:
+                return jsonify({"error": "A data de término não pode ser anterior à de início"}), 400
+            if fim_dt > agora + timedelta(minutes=5):
+                return jsonify({"error": "A data de término não pode ser futura"}), 400
 
         cursor.execute(
             """UPDATE Sintomas SET tipo=?, subtipo=?, descricao=?,
