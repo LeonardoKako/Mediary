@@ -28,7 +28,7 @@ const SINTOMAS_TYPES = [
 
 export const AdicionarSintomasPage = () => {
   const navigate = useNavigate();
-  const { addSintoma, selectedDate } = useSintomasStore();
+  const { adicionarSintoma, selectedDate } = useSintomasStore();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedSubtype, setSelectedSubtype] = useState<string | null>(null);
 
@@ -42,17 +42,13 @@ export const AdicionarSintomasPage = () => {
     }
   };
 
-  const handleAdd = (tipo: string, subtipo?: string) => {
-    addSintoma({
-      id: Date.now(), // ID fake
-      usuario_id: 1,
+  const handleAdd = async (tipo: string, subtipo?: string) => {
+    await adicionarSintoma({
       tipo,
       subtipo: subtipo || null,
       descricao: null,
       inicio: new Date(selectedDate).toISOString(),
       fim: null,
-      criado_em: new Date().toISOString(),
-      atualizado_em: new Date().toISOString(),
     });
 
     toast.success("Sintoma registrado!");

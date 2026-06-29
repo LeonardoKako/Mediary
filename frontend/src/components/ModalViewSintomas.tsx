@@ -128,6 +128,11 @@ export const ModalViewSintomas: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const handleSaveEdit = async () => {
     if (!editingSintomaId) return;
+    const editingSintoma = sintomas.find((s) => s.id === editingSintomaId);
+    if (!editingSintoma) {
+      toast.error("Sintoma não encontrado");
+      return;
+    }
     setLoadingAction(true);
 
     const parseFormatted = (dateStr: string, timeStr: string) => {
