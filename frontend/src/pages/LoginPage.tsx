@@ -11,8 +11,8 @@ import { Calendar, Mail, Lock, Eye, EyeOff } from "lucide-react";
 export const LoginPage = () => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  const [email, setEmail] = useState("usuario@mediary.com");
+  const [senha, setSenha] = useState("123456");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
